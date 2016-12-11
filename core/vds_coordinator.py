@@ -21,7 +21,7 @@ class DataManagement():
     def __init__(self, vds, task_map):
         self.vds = vds
         self.task_map = task_map
-
+        self.data_tasks = {}
 
     '''
     creates a virtual data object (vdo) for a file system data object
@@ -45,13 +45,15 @@ class DataManagement():
     creates a data task to move a virtual data object to a different storage layer(s)
     limitation: if the input data itself gets modified, then this doesn't work correctly
     '''
-    def create_data_task(self, vdo_src, dest_id):
-        vdo_dest = self.vds.copy(vdo_src, dest_id)
-        self.vds.add(vdo_dest)
-
+    def create_data_task(self, vdo_src, vdo_dest):
         # if staging in
         if len(vdo_src.producers) == 0 and len(vdo_src.consumers) > 0:
-            dt_id = uuid.uuid4()
+            dt_id = vdo_src.__id__ + '=>' + vdo_dest.__id__
+
+            if dt_id in self.data_tasks:
+                print('Data task already exists')
+                return
+
             data_task = DataTask(dt_id, vdo_src, vdo_dest)
             """
             - data stagein task becomes the consumer of the original data
@@ -64,7 +66,12 @@ class DataManagement():
             self.task_map[dt_id] = data_task
         # if staging out
         elif len(vdo_src.consumers) == 0 and len(vdo_src.producers) > 0:
-            dt_id = uuid.uuid4()
+            dt_id = vdo_dest.__id__ + '=>' + vdo_src.__id__
+
+            if dt_id in self.data_tasks:
+                print('Data task already exists')
+                return
+
             data_task = DataTask(dt_id, vdo_dest, vdo_src)
             vdo_dest.consumers = [data_task]
             vdo_dest.producers = [prod for prod in vdo_src.producers]
@@ -74,12 +81,11 @@ class DataManagement():
             vdo_dest.producers = [prod for prod in vdo_src.producers]
             vdo_dest.consumers = [cons for cons in vdo_src.consumers]
             self.vds.delete(vdo_src)
-
     
     '''
-    creates a data DAG of the extended workflow containing data tasks and compute tasks
+    creates a DAG of the extended workflow containing data tasks and compute tasks
     '''
-    def create_data_dag(self):
+    def create_dag(self):
         dag = {}
         for vdo_name in self.vds.vdos:
             vdo = self.vdo_dict[vdo_name]
@@ -263,7 +269,9 @@ if __name__ == '__main__':
     vdo2 = data_mgmt.create_vdo(data2)
     vdo2.producers = [task1]
     
-    data_mgmt.create_data_task(vdo1, 'burst')
+    vdo3 = vds.copy(vdo1, 'burst')
+    data_mgmt.create_data_task(vdo1, vdo3)
+
     for k in task_map:
         task = task_map[k]
         print("Task ({}): {} {}".format(task.__id__, task.type, task.command))

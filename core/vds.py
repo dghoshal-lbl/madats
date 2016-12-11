@@ -20,8 +20,8 @@ class VirtualDataObject():
         self.__id__ = self.storage_id + ':' + self.vds_path
         #self.vdo_name = self.__create_vdo__()
         #self.vdo_name = vds.get_mapped_vdo_name(storage_id, data_path)
-        self.copiedTo = []  # can be copied to multiple storage layers at a time
-        self.copiedFrom = None  # can be copied from only one storage layer at a time
+        self.copyTo = []  # can be copied to multiple storage layers at a time
+        self.copyFrom = None  # can be copied from only one storage layer at a time
         self.producers = []
         self.consumers = []
         self.persist = True
@@ -69,8 +69,9 @@ class VirtualDataSpace():
     def copy(self, vdo_src, dest_id):
         relative_path = vdo_src.relative_path
         vdo = VirtualDataObject(dest_id, relative_path)
-        vdo_src.copiedTo.append(dest_id)
-        vdo.copiedFrom = vdo_src.storage_id
+        vdo_src.copyTo.append(dest_id)
+        vdo.copyFrom = vdo_src.storage_id
+        self.add(vdo)
         return vdo
 
     '''
