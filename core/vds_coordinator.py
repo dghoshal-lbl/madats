@@ -9,9 +9,9 @@ manages a virtual data space (VDS) for a workflow
 - use the API to implement SD and WD, leaving scope for implementing diff algo for UD
 """
 import uuid
-import storage_layer
-from vds import VirtualDataSpace, VirtualDataObject
-from task import Task, DataTask
+import storage.storage_manager as storage_manager
+from core.vds import VirtualDataSpace, VirtualDataObject
+from core.task import Task, DataTask
 
 '''
 uses data management strategies, creates data tasks and a DAG
@@ -27,7 +27,7 @@ class DataManagement():
     creates a virtual data object (vdo) for a file system data object
     '''
     def create_vdo(self, data_object):
-        storage_id, relative_path = storage_layer.get_storage_info(data_object)
+        storage_id, relative_path = storage_manager.get_storage_info(data_object)
         if storage_id and relative_path:
             vdo_id = self.vds.vdo_exists(storage_id, relative_path)        
             if not vdo_id:
@@ -250,33 +250,3 @@ class DAGManagement():
     '''
     def execute_bins(self):
         self.task_bins
-
-
-
-if __name__ == '__main__':
-    vds = VirtualDataSpace()
-    task_map = {}
-
-    task1 = Task(0)
-    task1.set_command('./hello_world')
-    task_map[0] = task1
-    data1 = '/scratch/testdir/indata'
-    data2 = '/scratch/testdir/outdata'
-    
-    data_mgmt = DataManagement(vds, task_map)
-    vdo1 = data_mgmt.create_vdo(data1)
-    vdo1.consumers = [task1]
-    vdo2 = data_mgmt.create_vdo(data2)
-    vdo2.producers = [task1]
-    
-    vdo3 = vds.copy(vdo1, 'burst')
-    data_mgmt.create_data_task(vdo1, vdo3)
-
-    for k in task_map:
-        task = task_map[k]
-        print("Task ({}): {} {}".format(task.__id__, task.type, task.command))
-
-    vdo_list = vds.get_vdo_list()
-    for vdo in vdo_list:
-        print("VDO: {}".format(vdo.__id__))
-    #dag_mgmt = DAGManagement(vds, dag, task_map)
