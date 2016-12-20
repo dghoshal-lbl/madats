@@ -9,8 +9,8 @@ three modes:
 import tigres
 from core.vds_coordinator import DataManagement, DAGManagement
 from core.task import Task, DataTask
-from execution.db_loader import DbLoader
-from execution.db_monitor import DbMonitor
+from db.loader import DbLoader
+from db.monitor import DbMonitor
 from core.vds import VirtualDataSpace, VirtualDataObject
 import time
 

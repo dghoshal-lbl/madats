@@ -2,17 +2,11 @@
 
 from pymongo import MongoClient
 import pymongo
-from connection import Connection
+from db.connection import Connection
 import time
-import multiprocessing
 import sys
 import os
-import fnmatch
-import Queue
-import argparse
 from tabulate import tabulate
-import socket
-import datetime
 import curses
 import signal
 

@@ -4,7 +4,7 @@ from core.task import Task, DataTask
 from core.vds_coordinator import DAGManagement
 from pymongo import MongoClient
 import pymongo
-from execution.connection import Connection
+from db.connection import Connection
 import time
 import multiprocessing
 import sys
@@ -15,7 +15,7 @@ import argparse
 from tabulate import tabulate
 import socket
 import datetime
-from db_monitor import DbMonitor
+from db.monitor import DbMonitor
 
 class DbLoader():
     def __init__(self, host='localhost', port=27017, db='vds', collection='data_tasks'):
