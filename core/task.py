@@ -2,15 +2,17 @@
 a compute-task and data-task specification to be used by VDS Coordinator
 """
 
-from vds import VirtualDataObject
+from core.vds import VirtualDataObject
+import uuid
 
 class Task():
     COMPUTE = 0
     DATA = 1
 
-    def __init__(self, id, type = COMPUTE):
-        self.__id__  = id
+    def __init__(self, type = COMPUTE):
+        self.__id__  = uuid.uuid4()
         self.command = None
+        self.params = None
         self.partition = None
         self.walltime = None
         self.cpus = 0
@@ -22,6 +24,9 @@ class Task():
 
     def set_command(self, command):
         self.command = command
+
+    def set_params(self, params):
+        self.params = params
 
     def set_partition(self, partition):
         self.partition = partition
@@ -52,14 +57,14 @@ class DataTask(Task):
     OUT = 1
     INOUT = 2
     '''
-    def __init__(self, id, src, dest, **kwargs):
-        Task.__init__(self, id, Task.DATA)
+    def __init__(self, src, dest, **kwargs):
+        Task.__init__(self, Task.DATA)
         self.src_vdo = src
         self.dest_vdo = dest
         self.deadline = None
         #self.io_direction = -1
         self.kwargs = kwargs
-
+        self.params = src.__id__ + ' ' + dest.__id__ 
 
 if __name__ == '__main__':
     vdo1 = VirtualDataObject('scratch', 'testdir/indata')

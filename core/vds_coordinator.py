@@ -12,15 +12,16 @@ import uuid
 import storage.storage_manager as storage_manager
 from core.vds import VirtualDataSpace, VirtualDataObject
 from core.task import Task, DataTask
+import collections
+from collections import deque
 
 '''
 uses data management strategies, creates data tasks and a DAG
 -- manages `WHAT' data is moved
 '''
 class DataManagement():
-    def __init__(self, vds, task_map):
+    def __init__(self, vds):
         self.vds = vds
-        self.task_map = task_map
         self.data_tasks = {}
 
     '''
@@ -43,58 +44,64 @@ class DataManagement():
 
     '''
     creates a data task to move a virtual data object to a different storage layer(s)
-    limitation: if the input data itself gets modified, then this doesn't work correctly
     '''
     def create_data_task(self, vdo_src, vdo_dest):
-        # if staging in
+        # if staging in data
         if len(vdo_src.producers) == 0 and len(vdo_src.consumers) > 0:
-            dt_id = vdo_src.__id__ + '=>' + vdo_dest.__id__
-
-            if dt_id in self.data_tasks:
-                print('Data task already exists')
+            dt = vdo_src.__id__ + '=>' + vdo_dest.__id__
+            if dt in self.data_tasks:
+                print('Data task ({}) already exists'.format(dt))
                 return
+            else:
+                print('Data task ({}) created'.format(dt))
 
-            data_task = DataTask(dt_id, vdo_src, vdo_dest)
+            data_task = DataTask(vdo_src, vdo_dest)
+            self.data_tasks[dt] = data_task
             """
             - data stagein task becomes the consumer of the original data
             - data stagein task becomes the producer of the new data
             - consumers of the original data become the consumers of the new data
             """
             vdo_dest.producers = [data_task]
-            vdo_dest.consumers = [cons for cons in vdo_src.consumers]
             vdo_src.consumers = [data_task]
-            self.task_map[dt_id] = data_task
-        # if staging out
-        elif len(vdo_src.consumers) == 0 and len(vdo_src.producers) > 0:
-            dt_id = vdo_dest.__id__ + '=>' + vdo_src.__id__
-
-            if dt_id in self.data_tasks:
-                print('Data task already exists')
+        # if staging out data
+        elif (len(vdo_src.consumers) == 0 and len(vdo_src.producers) > 0) or \
+                (len(vdo_src.consumers) > 0 and len(vdo_src.producers) > 0 and vdo_src.persist == True):
+            dt = vdo_dest.__id__ + '=>' + vdo_src.__id__
+            if dt in self.data_tasks:
+                print('Data task ({}) already exists'.format(dt))
                 return
+            else:
+                print('Data task ({}) created'.format(dt))
 
-            data_task = DataTask(dt_id, vdo_dest, vdo_src)
-            vdo_dest.consumers = [data_task]
-            vdo_dest.producers = [prod for prod in vdo_src.producers]
-            vdo_src.producers = [data_task]
-            self.task_map[dt_id] = data_task
+            data_task = DataTask(vdo_dest, vdo_src)
+            self.data_tasks[dt] = data_task
+
+            vdo_dest.producers = [data_task]        
+            vdo_src.consumers.append(data_task)
+            vdo_dest.consumers = []
+        # for non-persistent intermediate data
         else:
-            vdo_dest.producers = [prod for prod in vdo_src.producers]
-            vdo_dest.consumers = [cons for cons in vdo_src.consumers]
             self.vds.delete(vdo_src)
-    
+            
     '''
     creates a DAG of the extended workflow containing data tasks and compute tasks
+    - it's an adjacency list representation of the graph where the list pertaining 
+      to a vertex contains the vertices you can reach directly from that vertex
     '''
     def create_dag(self):
         dag = {}
-        for vdo_name in self.vds.vdos:
-            vdo = self.vdo_dict[vdo_name]
+        vdo_list = self.vds.get_vdo_list()
+        for vdo in vdo_list:
             for prod in vdo.producers:
-                if prod.__id__ not in dag:
-                    dag[prod.__id__] = []
+                if prod not in dag:
+                    dag[prod] = []
                 for cons in vdo.consumers:
-                    if cons.__id__ not in dag[prod.__id__]:
-                        dag[prod.__id__].append(cons.__id__)
+                    if cons not in dag[prod]:
+                        dag[prod].append(cons)
+            for con in vdo.consumers:
+                if con not in dag:
+                    dag[con] = []
 
         return dag
     
@@ -105,12 +112,8 @@ manages the DAG of a workflow containing compute and data tasks
 -- manages `WHEN' to move the data
 '''
 class DAGManagement():
-    def __init__(self, vds, dag, task_map):
-        self.vds = vds
+    def __init__(self, dag):
         self.dag = dag
-        self.task_map = task_map
-        self.task_order = []
-        self.task_bins = []
 
     '''
     returns the list of predecessors of a task in the workflow DAG
@@ -118,8 +121,8 @@ class DAGManagement():
     def predecessors(self, task):
         pred = []
         for k in self.dag.keys():
-            if task.__id__ in self.dag[k]:
-                pred.append(self.task_map[k])
+            if task in self.dag[k]:
+                pred.append(k)
         return pred
 
 
@@ -128,8 +131,9 @@ class DAGManagement():
     '''
     def successors(self, task):
         succ = []
-        for v in self.dag[task.__id__]:
-            succ.append(self.task_map[v])
+        if task in self.dag:
+            for v in self.dag[task]:
+                succ.append(v)
         return succ
 
 
@@ -143,19 +147,13 @@ class DAGManagement():
     do a topological sort on the workflow DAG and generate the execution order
     '''
     def batch_execution_order(self):        
-        start_vertices = []
-        # find the root nodes
-        for k in self.dag:
-            task = self.task_map[k]
-            preds = self.predecessors(task)
-            if len(preds) == 0:
-                start_vertices.append(k)
+        visited = {}
+        task_order = []
+        for task in self.dag:
+            if task not in visited: 
+                self.__dfs__(task, visited, task_order)
 
-        # do a DFS on the graph
-        for v in start_vertices:
-            self.__dfs__(v)
-
-        #return task_order
+        return task_order
 
 
     '''
@@ -167,59 +165,54 @@ class DAGManagement():
     default way to assign tasks to bins
     '''
     def bin_execution_order(self):
-        bins_dict = collections.OrderedDict()
+        bins_dict = {}
         max_bins = 0
+        task_bins = []
 
         # PASS-1: assign bins to the tasks
-        for k in self.dag:
-            bin_size = self.__bin_bfs__(k)
+        for task in self.dag:
+            bin_size = self.__bin_bfs__(task)
             if max_bins < bin_size:
                 max_bins = bin_size
 
         # PASS-2: re-adjust task bins for just-in-time execution
-        for k in self.dag:
-            task = self.task_map[k]
-            max_bins = self.__readjust_bins__(task, max_bins, bins_dict)
+        for task in self.dag:
+            self.__readjust_bins__(task, max_bins, bins_dict)
 
-        for k, v in bins_dict:
-            self.task_bins.append(v)
+        for i in range(len(bins_dict)):
+            task_bins.append(bins_dict[i])
 
-        #return task_bins
+        return task_bins
+
 
     '''
     DFS on a graph
     '''
-    def __dfs__(self, start_id):        
-        self.task_order.append(start_id)
-        k = self.dag[start_id]
-        task = self.task_map[k]
-        task_stack = self.successors(task)
-        while len(task_stack) != 0:
-            t = task_stack.pop()
-            if t.__id__ not in self.task_order:
-                self.task_order.append(t.__id__)
-                t_succs = self.successors(t)
-                task_stack.extend(t_succs)
+    def __dfs__(self, start, visited, task_order):
+        visited[start] = True
+        succs = self.successors(start)
+        for succ in succs:
+            if succ not in visited:
+                self.__dfs__(succ, visited, task_order)
+        task_order.insert(0, start)
 
 
     '''
     BFS on a graph, with an assigned bin for each visited vertex of the graph
     '''
-    def __bin_bfs__(self, start_id):
+    def __bin_bfs__(self, start):
         bfs_order = []
-        bfs_order.append(start_id)
-        k = self.dag[start_id]
-        task = self.task_map[k]        
-        task_queue = deque(self.successors(task))
-        n_bins = task.bin
+        bfs_order.append(start)
+        task_queue = deque(self.successors(start))
+        n_bins = start.bin
         for t in task_queue:
-            if t.bin < task.bin + 1:
-                t.bin = task.bin + 1
+            if t.bin < start.bin + 1:
+                t.bin = start.bin + 1
                 n_bins = t.bin 
         while len(task_queue) != 0:
             t = task_queue.popleft()
-            if t.__id__ not in bfs_order:
-                bfs_order.append(t.__id__)
+            if t not in bfs_order:
+                bfs_order.append(t)
                 t_succs = self.successors(t)
                 for succ in t_succs:
                     if succ.bin < t.bin + 1:
@@ -233,20 +226,13 @@ class DAGManagement():
     readjust the order of tasks by readjusting their assigned bins for ** just-in-time ** staging/execution
     '''
     def __readjust_bins__(self, task, max_bins, bins_dict):
-        max_bin = 0
-        
-        return 0
+        min_bin = max_bins
+        curr_bin = task.bin
+        for succ in self.successors(task):
+            min_bin = min(min_bin, succ.bin)
 
-
-    '''
-    submit each task to the workload manager, and specify the task dependencies to it
-    '''
-    def execute_batch(self):
-        self.task_order
-
-
-    '''
-    submit the bins to the workload manager, where each bin is dependent on its parent
-    '''
-    def execute_bins(self):
-        self.task_bins
+        task.bin = max(curr_bin, min_bin-1)
+        if task.bin in bins_dict:
+            bins_dict[task.bin].append(task)
+        else:
+            bins_dict[task.bin] = [task]
