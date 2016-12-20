@@ -17,7 +17,7 @@ import curses
 import signal
 
 class DbMonitor():
-    def __init__(self, host='localhost', port=27017, db='vds', collection='tasks'):
+    def __init__(self, host='localhost', port=27017, db='vds', collection='data_tasks'):
         self._conn_ = Connection(host, port)
         self._db_ = db
         self._coll_ = collection

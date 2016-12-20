@@ -18,7 +18,7 @@ import datetime
 from db_monitor import DbMonitor
 
 class DbLoader():
-    def __init__(self, host='localhost', port=27017, db='vds', collection='tasks'):
+    def __init__(self, host='localhost', port=27017, db='vds', collection='data_tasks'):
         self._conn_ = Connection(host, port)
         self._db_ = db
         self._coll_ = collection
@@ -141,3 +141,13 @@ class DbLoader():
         conn.close()
 
         return workflow_id
+
+
+    def update_status(self, task_id, status):
+        conn = self._conn_.connect()
+        db = conn[self._db_]
+
+        coll = db[self._coll_]
+        coll.update({'task_id': task_id}, {'$set':{'status': status}}, upsert=False)
+        conn.close()
+        
