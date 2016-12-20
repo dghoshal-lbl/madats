@@ -1,5 +1,39 @@
 VDS-CSS: VDS Coordinator and Workflow Manager for CSS
 ------------------------------------------------------
 
-1. Dependencies
+Dependencies
+---------------
    - Tigres
+   - MongoDB
+
+Pre-requisites
+---------------
+
+Usage
+---------------
+1. Using the VDS API [to be used by programmers]
+   - compose a data-centric workflow using VDS Coordinator
+     -- add VDOs to a VDS
+     -- add producers and consumers to VDOs
+     -- create data tasks (if necessary)
+
+2. Using a workflow description [to be used by direct users]
+   - provide a description of the workflow (including data descriptions)
+   - select the appropriate data management strategy
+   - generate batch scripts through the code generator
+   - submit the batch scripts through batch schedulers 
+
+Test
+----------------
+1. start the data orchestrator
+      python utils/data_orchestrator.py
+
+2. monitor the task status
+      python db/monitor.py
+
+3. run the test
+      python tests/test.py
+
+-- the status of tasks should change from PENDING to COMPLETED as the test executes
+   and the data orchestrator updates the data task status
+
