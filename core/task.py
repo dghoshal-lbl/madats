@@ -10,7 +10,7 @@ class Task():
     COMPUTE = 0
     DATA = 1
 
-    def __init__(self, type = COMPUTE, **kwargs):
+    def __init__(self, type = COMPUTE, args=[]):
         self.__id__  = uuid.uuid4()
         self.command = ''
         self.params = []
@@ -22,16 +22,16 @@ class Task():
         self.successors = []
         self.bin = 0
         self.type = type
-        self.kwargs = kwargs
+        self.args = args
 
 ##########################################################################
 
 class DataTask(Task):
     def __init__(self, src, dest, args):
-        Task.__init__(self, Task.DATA)
+        Task.__init__(self, Task.DATA, args)
         self.src_vdo = src
         self.dest_vdo = dest
-        self.args = args # deadline, bandwidth, latency, persist, lifetime
+        #self.args = args # deadline, bandwidth, latency, persist, lifetime
         self.__set_args__()
 
     def __set_args__(self):

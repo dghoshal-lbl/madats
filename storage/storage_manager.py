@@ -5,7 +5,7 @@ fill in module to manage the storage systems and provide namespaces and mount po
 for tiered storage
 '''
 
-storage_map = {'scratch': '/scratch/', 'burst': '/dw/'}
+storage_map = {'scratch': '/scratch/', 'burst': '/dw/', 'css': '/css/'}
 
 def get_storage_info(data_object):
     # not correct, need to fix it with starts with etc.
@@ -23,3 +23,4 @@ def get_storage_path(storage_id):
     else:
         print('Unknown storage identifier!')
         return None
+

@@ -20,7 +20,7 @@ import time
 - creates data tasks that poll the db to check data move status before executing the associated compute tasks
 '''
 class ExecutionManager():
-    WAIT_TIME = 1
+    WAIT_TIME = 5
 
     def __init__(self, execution):
         self.execution_name = {
@@ -71,13 +71,13 @@ class ExecutionManager():
         db_loader = DbLoader(collection='tasks')
         task_id = str(task.__id__)
 
-        db_loader.update_status(task_id, 'RUNNING')
         # data tasks will be handled by the storage system and hence, only monitor them
         if task.type == Task.DATA:
             ttask = tigres.Task("{}".format(task.__id__), tigres.FUNCTION, impl_name=self.manage_data_tasks, input_types=[str])
             task_array.append(ttask)
             input_array.append([task.__id__])
         else:
+            db_loader.update_status(task_id, 'RUNNING')
             params = []
             if task.params != None:
                 params = task.params
