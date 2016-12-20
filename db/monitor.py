@@ -11,7 +11,7 @@ import curses
 import signal
 
 class DbMonitor():
-    def __init__(self, host='localhost', port=27017, db='vds', collection='data_tasks'):
+    def __init__(self, host='localhost', port=27017, db='vds', collection='tasks'):
         self._conn_ = Connection(host, port)
         self._db_ = db
         self._coll_ = collection
@@ -41,7 +41,8 @@ class DbMonitor():
         conn = self._conn_.connect()
         db = conn[self._db_]
 
-        field_names = ['workflow_id', 'task_id', 'type', 'command', 'params', 'submission_time', 'start_time', 'end_time', 'status']
+        #field_names = ['workflow_id', 'task_id', 'type', 'command', 'params', 'submission_time', 'start_time', 'end_time', 'status']
+        field_names = ['workflow_id', 'type', 'command', 'params', 'status']
         #order = (field_names[0], pymongo.ASCENDING)
 
         fields = {}
@@ -59,7 +60,7 @@ class DbMonitor():
                 header.append(field)
             
         resultset = []
-        for doc in coll.find(projection=fields): #.sort(order):
+        for doc in coll.find(projection=fields).limit(20): #.sort(order):
             self.add_resultset(resultset, fields, doc)
 
         results_table = tabulate(resultset, headers=header, tablefmt="orgtbl")
@@ -79,7 +80,6 @@ class DbMonitor():
                 time.sleep(5)
         finally:
             curses.endwin()
-
 
     def check_task_status(self, task_id):
         conn = self._conn_.connect()

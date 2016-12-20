@@ -20,9 +20,19 @@ uses data management strategies, creates data tasks and a DAG
 -- manages `WHAT' data is moved
 '''
 class DataManagement():
-    def __init__(self, vds):
+    STORAGE, WORKFLOW = range(2)
+
+    def __init__(self, vds, manager=STORAGE):
         self.vds = vds
         self.data_tasks = {}
+        self.manager = manager
+
+
+    def copy_command(self):
+        if self.manager == self.STORAGE:
+            return 'css_cp' # do it through some config/properties file                                               
+        else:
+            return 'cp'
 
     '''
     creates a virtual data object (vdo) for a file system data object
@@ -45,7 +55,10 @@ class DataManagement():
     '''
     creates a data task to move a virtual data object to a different storage layer(s)
     '''
-    def create_data_task(self, vdo_src, vdo_dest):
+    def create_data_task(self, vdo_src, vdo_dest, **kwargs):
+        args = {'command': self.copy_command()}
+        for k, v in kwargs.iteritems():
+            args[k] = v
         # if staging in data
         if len(vdo_src.producers) == 0 and len(vdo_src.consumers) > 0:
             dt = vdo_src.__id__ + '=>' + vdo_dest.__id__
@@ -55,7 +68,7 @@ class DataManagement():
             else:
                 print('Data task ({}) created'.format(dt))
 
-            data_task = DataTask(vdo_src, vdo_dest)
+            data_task = DataTask(vdo_src, vdo_dest, args)
             self.data_tasks[dt] = data_task
             """
             - data stagein task becomes the consumer of the original data
@@ -74,7 +87,7 @@ class DataManagement():
             else:
                 print('Data task ({}) created'.format(dt))
 
-            data_task = DataTask(vdo_dest, vdo_src)
+            data_task = DataTask(vdo_dest, vdo_src, args)
             self.data_tasks[dt] = data_task
 
             vdo_dest.producers = [data_task]        

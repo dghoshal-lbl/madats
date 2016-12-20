@@ -6,33 +6,31 @@ from pymongo import MongoClient
 import pymongo
 from db.connection import Connection
 import time
-import multiprocessing
 import sys
 import os
-import fnmatch
-import Queue
-import argparse
 from tabulate import tabulate
 import socket
 import datetime
 from db.monitor import DbMonitor
 
 class DbLoader():
-    def __init__(self, host='localhost', port=27017, db='vds', collection='data_tasks'):
+    def __init__(self, host='localhost', port=27017, db='vds', collection='tasks'):
         self._conn_ = Connection(host, port)
         self._db_ = db
         self._coll_ = collection
 
-    def truncate(self):
+    def truncate(self, collections=[]):
         conn = self._conn_.connect()
         db = conn[self._db_]
 
-        coll = db[self._coll_]
-        result = coll.delete_many({})
+        if len(collections) == 0:
+            coll = db[self._coll_]
+            result = coll.delete_many({})
         #print("Number of records deleted: {}".format(result.deleted_count))
-
-        coll = db['workflows']
-        result = coll.delete_many({})
+        else:
+            for collection in collections:
+                coll = db[collection]
+                result = coll.delete_many({})
 
     '''
     inserts tasks to mongo (for now)
@@ -66,16 +64,18 @@ class DbLoader():
                 rec['type'] = 'COMPUTE'
             else:
                 rec['type'] = 'DATA'
-                rec['deadline'] = task.deadline
 
             rec['command'] = task.command
-            rec['params'] = task.params
+            params = ' '.join(task.params)
+            rec['params'] = params
             deps = [str(t.__id__) for t in dag_mgmt.predecessors(task)]
             rec['dependencies'] = ','.join(deps)
             rec['submission_time'] = '' # datetime.datetime.fromtimestamp()
             rec['start_time'] = ''
             rec['end_time'] = ''
             rec['status'] = 'PENDING'
+            for k in task.kwargs:
+                rec[k] = task.kwargs[k]
             docs.append(rec)
         
         start_time = time.time()
@@ -119,15 +119,17 @@ class DbLoader():
                 rec['workflow_id'] = workflow_id
                 rec['task_id'] = str(task.__id__)
                 rec['type'] = 'DATA'
-                rec['deadline'] = task.deadline
                 rec['command'] = task.command
-                rec['params'] = task.params
+                params = ' '.join(task.params)
+                rec['params'] = params
                 deps = [str(t.__id__) for t in dag_mgmt.predecessors(task)]
                 rec['dependencies'] = ','.join(deps)
                 rec['submission_time'] = '' # datetime.datetime.fromtimestamp()
                 rec['start_time'] = ''
                 rec['end_time'] = ''
                 rec['status'] = 'PENDING'
+                for k in task.kwargs:
+                    rec[k] = task.kwargs[k]
                 docs.append(rec)
         
         start_time = time.time()

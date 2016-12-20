@@ -4,72 +4,52 @@ a compute-task and data-task specification to be used by VDS Coordinator
 
 from core.vds import VirtualDataObject
 import uuid
+import storage.storage_manager as storage_manager
 
 class Task():
     COMPUTE = 0
     DATA = 1
 
-    def __init__(self, type = COMPUTE):
+    def __init__(self, type = COMPUTE, **kwargs):
         self.__id__  = uuid.uuid4()
-        self.command = None
-        self.params = None
-        self.partition = None
-        self.walltime = None
+        self.command = ''
+        self.params = []
+        self.partition = ''
+        self.walltime = ''
         self.cpus = 0
-        self.account = None
+        self.account = ''
         self.predecessors = []
         self.successors = []
         self.bin = 0
         self.type = type
-
-    def set_command(self, command):
-        self.command = command
-
-    def set_params(self, params):
-        self.params = params
-
-    def set_partition(self, partition):
-        self.partition = partition
-
-    def set_walltime(self, walltime):
-        self.walltime = walltime
-
-    def set_cpus(self, cpus):
-        self.cpus = cpus
-
-    def set_account(self, account):
-        self.account = account
-
-    def set_predecessors(self, pred):
-        # todo: type-checking for task-type
-        self.predecessors = pred
-
-    def set_successors(self, succ):
-        # todo: type-checking for task-type
-        self.successors = succ
+        self.kwargs = kwargs
 
 ##########################################################################
 
 class DataTask(Task):
-    '''
-    NA = -1
-    IN = 0
-    OUT = 1
-    INOUT = 2
-    '''
-    def __init__(self, src, dest, **kwargs):
+    def __init__(self, src, dest, args):
         Task.__init__(self, Task.DATA)
         self.src_vdo = src
         self.dest_vdo = dest
-        self.deadline = None
-        #self.io_direction = -1
-        self.kwargs = kwargs
-        self.params = src.__id__ + ' ' + dest.__id__ 
+        self.args = args # deadline, bandwidth, latency, persist, lifetime
+        self.__set_args__()
+
+    def __set_args__(self):
+        if 'command' in self.args:
+            self.command = self.args['command']
+
+        src_path = storage_manager.get_storage_path(self.src_vdo.storage_id)
+        src_data = self.src_vdo.relative_path
+        src = src_path + src_data
+
+        dest_path = storage_manager.get_storage_path(self.dest_vdo.storage_id)
+        dest_data = self.dest_vdo.relative_path
+        dest = dest_path + dest_data
+        self.params = [src, dest] # if there are additional args, set it up here
 
 if __name__ == '__main__':
     vdo1 = VirtualDataObject('scratch', 'testdir/indata')
     vdo2 = VirtualDataObject('scratch', 'testdir/outdata')
     
-    dt = DataTask(0, vdo1, vdo2)
-    dt.set_command('cp')
-    print("{} {} {} {}".format(dt.type, dt.command, dt.src_vdo.__id__, dt.dest_vdo.__id__))
+    dt = DataTask(vdo1, vdo2, command='mv')
+    print("{} {} {}".format(dt.type, dt.command, dt.params))

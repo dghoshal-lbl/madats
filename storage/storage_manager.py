@@ -15,3 +15,11 @@ def get_storage_info(data_object):
             #print(data_object, relative_path)
             return k, relative_path
     return None, None
+
+
+def get_storage_path(storage_id):
+    if storage_id in storage_map:
+        return storage_map[storage_id]
+    else:
+        print('Unknown storage identifier!')
+        return None
