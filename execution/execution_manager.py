@@ -73,6 +73,7 @@ class ExecutionManager():
 
         # data tasks will be handled by the storage system and hence, only monitor them
         if task.type == Task.DATA:
+            db_loader.update_status(task_id, 'PENDING')
             ttask = tigres.Task("{}".format(task.__id__), tigres.FUNCTION, impl_name=self.manage_data_tasks, input_types=[str])
             task_array.append(ttask)
             input_array.append([task.__id__])
@@ -80,7 +81,7 @@ class ExecutionManager():
             db_loader.update_status(task_id, 'RUNNING')
             params = []
             if task.params != None:
-                params = task.params
+                params = task.get_remapped_params()
             ttask = tigres.Task("{}".format(task.__id__), tigres.EXECUTABLE, impl_name=task.command)
             task_array.append(ttask)
             input_array.append(params)
@@ -95,7 +96,7 @@ class ExecutionManager():
         if return_code == 1:
             task_check = tigres.check('task', state=tigres.utils.State.FAIL)
             if task_check:
-                print("Failed!!")
+                print("Failed Single!!")
                 for task_record in task_check:
                     print(".. Task Failed: {}, {}".format(task_record.name, task_record.errmsg))
             db_loader.update_status(task_id, 'FAILED')
@@ -113,18 +114,20 @@ class ExecutionManager():
 
         for task in tasks:
             # data tasks will be handled by the storage system and hence, only monitor them
-            task_ids.append(str(task.__id__))
+            task_id = str(task.__id__)
+            task_ids.append(task_id)
             if task.type == Task.DATA:
-                ttask = tigres.Task("{}".format(task.__id__), tigres.FUNCTION, impl_name=self.manage_data_tasks, input_types=str)
+                db_loader.update_status(task_id, 'PENDING')
+                ttask = tigres.Task("{}".format(task.__id__), tigres.FUNCTION, impl_name=self.manage_data_tasks, input_types=[str])
                 task_array.append(ttask)
-                input_array.append(task.__id__)
+                input_array.append([task.__id__])
             else:
                 params = []
                 if task.params != None:
-                    params = task.params
+                    params = task.get_remapped_params()
                 ttask = tigres.Task("{}".format(task.__id__), tigres.EXECUTABLE, impl_name=task.command)
                 task_array.append(ttask)
-                input_array.append(task.params)
+                input_array.append(params)
 
         for task_id in task_ids:
             db_loader.update_status(task_id, 'RUNNING')
@@ -132,14 +135,14 @@ class ExecutionManager():
         return_code = 0
         try:
             output = tigres.parallel('parallel_task', task_array, input_array)
-            print(','.join(output))
+            print(','.join(str(output)))
         except tigres.utils.TigresException as e:
             return_code = 1
 
         if return_code == 1:
             task_check = tigres.check('task', state=tigres.utils.State.FAIL)
             if task_check:
-                print("Failed!!")
+                print("Failed Parallel!!")
                 for task_record in task_check:
                     print(".. Task Failed: {}, {}".format(task_record.name, task_record.errmsg))
             for task_id in task_ids:

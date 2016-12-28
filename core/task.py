@@ -24,6 +24,18 @@ class Task():
         self.type = type
         self.args = args
 
+    def get_remapped_params(self):
+        params = []
+        for param in self.params:
+            if isinstance(param, VirtualDataObject):
+                vdo_path = storage_manager.get_storage_path(param.storage_id)
+                vdo_data = param.relative_path
+                vdo = vdo_path + vdo_data
+                params.append(vdo)
+            else:
+                params.append(param)
+        return params
+          
 ##########################################################################
 
 class DataTask(Task):

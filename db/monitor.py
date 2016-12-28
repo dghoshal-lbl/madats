@@ -8,7 +8,7 @@ import sys
 import os
 from tabulate import tabulate
 import curses
-import signal
+#import signal
 import collections
 
 class DbMonitor():
@@ -16,10 +16,10 @@ class DbMonitor():
         self._conn_ = Connection(host, port)
         self._db_ = db
         self._coll_ = collection
-        signal.signal(signal.SIGINT, self.signal_handler)
+        #signal.signal(signal.SIGINT, self.signal_handler)
 
-    def signal_handler(self, signal, frame):
-        sys.exit(0)
+    #def signal_handler(self, signal, frame):
+    #    sys.exit(0)
 
     def add_resultset(self, resultset, fields, doc):
         rec = []

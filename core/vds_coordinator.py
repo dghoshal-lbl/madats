@@ -77,24 +77,56 @@ class DataManagement():
             """
             vdo_dest.producers = [data_task]
             vdo_src.consumers = [data_task]
+            for task in vdo_dest.consumers:
+                params = task.params
+                for i in range(len(params)):
+                    if task.params[i] == vdo_src:
+                        task.params[i] = vdo_dest
+            for task in vdo_dest.producers:
+                params = task.params
+                for i in range(len(params)):
+                    if task.params[i] == vdo_src:
+                        task.params[i] = vdo_dest            
         # if staging out data
         elif (len(vdo_src.consumers) == 0 and len(vdo_src.producers) > 0) or \
                 (len(vdo_src.consumers) > 0 and len(vdo_src.producers) > 0 and vdo_src.persist == True):
-            dt = vdo_dest.__id__ + '=>' + vdo_src.__id__
+            #dt = vdo_dest.__id__ + '=>' + vdo_src.__id__
+            dt = vdo_src.__id__ + '=>' + vdo_dest.__id__
             if dt in self.data_tasks:
                 print('Data task ({}) already exists'.format(dt))
                 return
             else:
                 print('Data task ({}) created'.format(dt))
 
-            data_task = DataTask(vdo_dest, vdo_src, args)
+            #data_task = DataTask(vdo_dest, vdo_src, args)
+            data_task = DataTask(vdo_src, vdo_dest, args)
             self.data_tasks[dt] = data_task
 
             vdo_dest.producers = [data_task]        
             vdo_src.consumers.append(data_task)
             vdo_dest.consumers = []
+            for task in vdo_src.consumers:
+                params = task.params
+                for i in range(len(params)):
+                    if task.params[i] == vdo_dest:
+                        task.params[i] = vdo_src
+            for task in vdo_src.producers:
+                params = task.params
+                for i in range(len(params)):
+                    if task.params[i] == vdo_dest:
+                        task.params[i] = vdo_src            
         # for non-persistent intermediate data
         else:
+            for task in vdo_dest.consumers:
+                params = task.params
+                for i in range(len(params)):
+                    if task.params[i] == vdo_src:
+                        task.params[i] = vdo_dest            
+            for task in vdo_dest.producers:
+                params = task.params
+                for i in range(len(params)):
+                    if task.params[i] == vdo_src:
+                        task.params[i] = vdo_dest            
             self.vds.delete(vdo_src)
             
     '''

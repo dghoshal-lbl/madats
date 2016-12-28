@@ -26,7 +26,9 @@ if __name__ == '__main__':
         records = db_monitor.find_data_tasks()
         for rec in records:
             task_id = rec['task_id']
-            update_data_task(task_id)
+            status = db_monitor.check_task_status(task_id)
+            if status != 'NOT_AVAILABLE':
+                update_data_task(task_id)
         time.sleep(2)
 
 

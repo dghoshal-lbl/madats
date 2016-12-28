@@ -24,7 +24,7 @@ class VirtualDataObject():
         self.copyFrom = None  # can be copied from only one storage layer at a time
         self.producers = []
         self.consumers = []
-        self.persist = True
+        self.persist = False
         #vds.add(self)
         
     '''

@@ -62,18 +62,19 @@ class DbLoader():
             rec['task_id'] = str(task.__id__)
             if task.type == Task.COMPUTE:
                 rec['type'] = 'COMPUTE'
+                rec['status'] = 'PENDING'
             else:
                 rec['type'] = 'DATA'
+                rec['status'] = 'NOT_AVAILABLE'
 
             rec['command'] = task.command
-            params = ' '.join(task.params)
+            params = ' '.join(task.get_remapped_params())
             rec['params'] = params
             deps = [str(t.__id__) for t in dag_mgmt.predecessors(task)]
             rec['dependencies'] = ','.join(deps)
             rec['submission_time'] = '' # datetime.datetime.fromtimestamp()
             rec['start_time'] = ''
             rec['end_time'] = ''
-            rec['status'] = 'PENDING'
             for k in task.args:
                 rec[k] = task.args[k]
             docs.append(rec)
