@@ -5,8 +5,15 @@ module to create a Virtual Data Space
 # make this a generic interface to multiple file systems
 #import storage_layer
 import os
+import hashlib
 
 __VDS_MOUNTPT__ = '/vds'
+
+def md5hash(storage_id, vds_path):
+    vds_id = storage_id + ':' + vds_path
+    md5 = hashlib.md5()
+    md5.update(vds_id)
+    return md5.hexdigest()
 
 '''
 creates and operates on a virtual data object (VDO)
@@ -16,33 +23,22 @@ class VirtualDataObject():
     def __init__(self, storage_id, relative_path):
         self.storage_id = storage_id
         self.relative_path = relative_path # relative to storage mount point
-        self.vds_path = os.path.join(__VDS_MOUNTPT__, relative_path)
-        self.__id__ = self.storage_id + ':' + self.vds_path
-        #self.vdo_name = self.__create_vdo__()
-        #self.vdo_name = vds.get_mapped_vdo_name(storage_id, data_path)
+        vds_path = os.path.join(__VDS_MOUNTPT__, relative_path)
+        #self.__id__ = (self.storage_id, self.vds_path)
+        self.__id__ = md5hash(storage_id, vds_path)
         self.copyTo = []  # can be copied to multiple storage layers at a time
         self.copyFrom = None  # can be copied from only one storage layer at a time
         self.producers = []
         self.consumers = []
         self.persist = False
-        #vds.add(self)
-        
-    '''
-    def __create_vdo__(self):
-        mount_pt = storage_layer.get_fs_map(self.storage_id)
-        vds_path = self.fs_object.replace(mount_pt, __VDS_MOUNTPT__)
-        return (self.storage_id + ':' + vds_path)
-    '''
 
     def add_producer(self, task):
-        self.producer.append(task)
+        self.producers.append(task)
 
     def add_consumer(self, task):
         self.consumers.append(task)
 
-#    def persist(self):
-#        self.persist = True
- 
+
 ######################################################################################
 
 '''
@@ -75,10 +71,11 @@ class VirtualDataSpace():
     copies a VDO to another VDO in the VDS
     '''
     def copy(self, vdo_src, dest_id):
-        relative_path = vdo_src.relative_path        
-        
-        vdo_id = self.vdo_exists(dest_id, relative_path)
-        if vdo_id != None:
+        relative_path = vdo_src.relative_path                
+        vds_path = os.path.join(__VDS_MOUNTPT__, relative_path)
+        vdo_id = md5hash(dest_id, vds_path)
+        exists_vdo = self.vdo_exists(vdo_id)
+        if exists_vdo:
             return self.__vdo_dict__[vdo_id]
 
         vdo = VirtualDataObject(dest_id, relative_path)
@@ -97,7 +94,7 @@ class VirtualDataSpace():
         self.vdos.remove(vdo.__id__)
 
     '''
-    search
+    retrieve one
     '''
     def get_vdo(self, vdo_id):
         if vdo_id in self.__vdo_dict__:
@@ -107,16 +104,26 @@ class VirtualDataSpace():
             return None
 
     '''
-    retrieve
+    retrieve all
     '''
     def get_vdo_list(self):
         vdo_list = [self.__vdo_dict__[id] for id in self.__vdo_dict__]
         return vdo_list
 
+    '''
+    search
+    '''
+    def vdo_exists(self, vdo_id):
+        if vdo_id in self.__vdo_dict__:
+            return True
+        else:
+            return False
+    '''
     def vdo_exists(self, storage_id, relative_path):
         vds_path = os.path.join(__VDS_MOUNTPT__, relative_path)
-        vdo_id = storage_id + ':' + vds_path
+        vdo_id = md5hash(storage_id, vds_path)
         if vdo_id in self.__vdo_dict__:
             return vdo_id
         else:
             return None
+    '''

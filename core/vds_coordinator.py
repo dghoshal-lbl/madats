@@ -9,275 +9,117 @@ manages a virtual data space (VDS) for a workflow
 - use the API to implement SD and WD, leaving scope for implementing diff algo for UD
 """
 import uuid
-import storage.storage_manager as storage_manager
+import os
+import shlex
+from plugins import plugin_loader
 from core.vds import VirtualDataSpace, VirtualDataObject
 from core.task import Task, DataTask
-import collections
-from collections import deque
 
 '''
-uses data management strategies, creates data tasks and a DAG
--- manages `WHAT' data is moved
+Coordinates the movement of data between multiple storage tiers through VDS (manages VDS and virtual data objects)
+ - creates data tasks and a DAG -- manages `WHAT' data is moved
 '''
-class DataManagement():
-    STORAGE, WORKFLOW = range(2)
+class Coordinator():
+    def __init__(self):
+        self.__data_vdo_map__ = {}
+        self.__storage_plugin__ = plugin_loader.load_storage_plugin()
+        self.__storage_hierarchy__ = self.__storage_plugin__.get_hierarchy()
 
-    def __init__(self, vds, manager=STORAGE):
-        self.vds = vds
-        self.data_tasks = {}
-        self.manager = manager
-
-
-    def copy_command(self):
-        if self.manager == self.STORAGE:
-            return 'css_cp' # do it through some config/properties file                                               
-        else:
-            return 'cp'
 
     '''
     creates a virtual data object (vdo) for a file system data object
     '''
-    def create_vdo(self, data_object):
-        storage_id, relative_path = storage_manager.get_storage_info(data_object)
+    def __create_vdo__(self, data):
+        data_object = os.path.abspath(data)
+        if data_object in self.__data_vdo_map__:
+            return self.__data_vdo_map__[data_object]
+
+        storage_id, relative_path = self.__storage_plugin__.get_id_path(self.__storage_hierarchy__, data_object)
+
         if storage_id and relative_path:
-            vdo_id = self.vds.vdo_exists(storage_id, relative_path)        
-            if not vdo_id:
-                vdo = VirtualDataObject(storage_id, relative_path)
-                self.vds.add(vdo)
-            else:
-                vdo = self.vds.get_vdo(vdo_id)
-            
+            vdo = VirtualDataObject(storage_id, relative_path)
+            self.__data_vdo_map__[data_object] = vdo
             return vdo
         else:
             print('Invalid data object')
-
+        return None
 
     '''
-    creates a data task to move a virtual data object to a different storage layer(s)
+    translates a data object parameter into a VDO parameter
     '''
-    def create_data_task(self, vdo_src, vdo_dest, **kwargs):
-        args = {'command': self.copy_command()}
-        for k, v in kwargs.iteritems():
-            args[k] = v
-        # if staging in data
-        if len(vdo_src.producers) == 0 and len(vdo_src.consumers) > 0:
-            dt = vdo_src.__id__ + '=>' + vdo_dest.__id__
-            if dt in self.data_tasks:
-                print('Data task ({}) already exists'.format(dt))
-                return
+    '''
+    def __map_params__(vds, task_args):
+        args = shlex.split(task_args)
+        params = []
+        for arg in args:
+            if arg in self.__data_vdo_map__:
+                params.append(self.__data_vdo_map__[arg])
             else:
-                print('Data task ({}) created'.format(dt))
-
-            data_task = DataTask(vdo_src, vdo_dest, args)
-            self.data_tasks[dt] = data_task
-            """
-            - data stagein task becomes the consumer of the original data
-            - data stagein task becomes the producer of the new data
-            - consumers of the original data become the consumers of the new data
-            """
-            vdo_dest.producers = [data_task]
-            vdo_src.consumers = [data_task]
-            for task in vdo_dest.consumers:
-                params = task.params
-                for i in range(len(params)):
-                    if task.params[i] == vdo_src:
-                        task.params[i] = vdo_dest
-            for task in vdo_dest.producers:
-                params = task.params
-                for i in range(len(params)):
-                    if task.params[i] == vdo_src:
-                        task.params[i] = vdo_dest            
-        # if staging out data
-        elif (len(vdo_src.consumers) == 0 and len(vdo_src.producers) > 0) or \
-                (len(vdo_src.consumers) > 0 and len(vdo_src.producers) > 0 and vdo_src.persist == True):
-            #dt = vdo_dest.__id__ + '=>' + vdo_src.__id__
-            dt = vdo_src.__id__ + '=>' + vdo_dest.__id__
-            if dt in self.data_tasks:
-                print('Data task ({}) already exists'.format(dt))
-                return
-            else:
-                print('Data task ({}) created'.format(dt))
-
-            #data_task = DataTask(vdo_dest, vdo_src, args)
-            data_task = DataTask(vdo_src, vdo_dest, args)
-            self.data_tasks[dt] = data_task
-
-            vdo_dest.producers = [data_task]        
-            vdo_src.consumers.append(data_task)
-            vdo_dest.consumers = []
-            for task in vdo_src.consumers:
-                params = task.params
-                for i in range(len(params)):
-                    if task.params[i] == vdo_dest:
-                        task.params[i] = vdo_src
-            for task in vdo_src.producers:
-                params = task.params
-                for i in range(len(params)):
-                    if task.params[i] == vdo_dest:
-                        task.params[i] = vdo_src            
-        # for non-persistent intermediate data
-        else:
-            for task in vdo_dest.consumers:
-                params = task.params
-                for i in range(len(params)):
-                    if task.params[i] == vdo_src:
-                        task.params[i] = vdo_dest            
-            for task in vdo_dest.producers:
-                params = task.params
-                for i in range(len(params)):
-                    if task.params[i] == vdo_src:
-                        task.params[i] = vdo_dest            
-            self.vds.delete(vdo_src)
-            
+                params.append(arg)
+        return params
     '''
+
+    '''
+    maps a task into a VDS, making it a collection of VDOs
+    '''
+    def __map2vds__(self, vds, task):
+        for input in task.inputs:
+            vdo = self.__create_vdo__(input)
+            vdo.add_consumer(task)
+            vds.add(vdo)
+
+        for output in task.outputs:
+            vdo = self.__create_vdo__(output)
+            vdo.add_producer(task)
+            vds.add(vdo)
+
+        #task.params = self.__map_params__(vds, task.args)
+
+    # entry point is the execution manager that uses the workflow plugin to parse a workflow into an intermediate vds_workflow representation
+    '''
+    given a workflow, map it to VDS
+    '''
+    def create_vds(self, workflow):
+        workflow_plugin = plugin_loader.load_workflow_plugin()
+        tasks = workflow_plugin.parse(workflow)
+        vds = VirtualDataSpace()
+        for task in tasks:
+            self.__map2vds__(vds, task)
+
+        return vds
+
+
+    '''
+    manage a VDS using different data management strategies
     creates a DAG of the extended workflow containing data tasks and compute tasks
     - it's an adjacency list representation of the graph where the list pertaining 
       to a vertex contains the vertices you can reach directly from that vertex
+
     '''
-    def create_dag(self):
-        dag = {}
-        vdo_list = self.vds.get_vdo_list()
+    def manage_vds(self, vds, **kwargs):
+        data_plugin = plugin_loader.load_data_plugin()
+        data_plugin.datamgmt_strategy(vds, **kwargs)
+        
+        extended_dag = {}
+        vdo_list = vds.get_vdo_list()
         for vdo in vdo_list:
             for prod in vdo.producers:
-                if prod not in dag:
-                    dag[prod] = []
+                if prod not in extended_dag:
+                    extended_dag[prod] = []
                 for cons in vdo.consumers:
-                    if cons not in dag[prod]:
-                        dag[prod].append(cons)
+                    if cons not in extended_dag[prod]:
+                        extended_dag[prod].append(cons)
             for con in vdo.consumers:
-                if con not in dag:
-                    dag[con] = []
+                if con not in extended_dag:
+                     extended_dag[con] = []
 
-        return dag
-    
-######################################################################################
-
-'''
-manages the DAG of a workflow containing compute and data tasks
--- manages `WHEN' to move the data
-'''
-class DAGManagement():
-    def __init__(self, dag):
-        self.dag = dag
+        return extended_dag
 
     '''
-    returns the list of predecessors of a task in the workflow DAG
+    destroy the VDS
     '''
-    def predecessors(self, task):
-        pred = []
-        for k in self.dag.keys():
-            if task in self.dag[k]:
-                pred.append(k)
-        return pred
+    def destroy_vds(self, vds):
+        vdos = vds.get_vdo_list()
+        for vdo in vdos:
+            vds.delete(vdo)
 
-
-    '''
-    returns the list of successors of a task in the workflow DAG
-    '''
-    def successors(self, task):
-        succ = []
-        if task in self.dag:
-            for v in self.dag[task]:
-                succ.append(v)
-        return succ
-
-
-    '''
-    ** task-based batch execution order: a task is the high-level execution entity **
-    - the order is determined as if all the tasks are submitted as a batch of tasks
-    - dependencies to the tasks are maintained; so even if exexcuted sequentially
-      no task will be executed until all its predecessors have executed
-    - executable is a task
-
-    do a topological sort on the workflow DAG and generate the execution order
-    '''
-    def batch_execution_order(self):        
-        visited = {}
-        task_order = []
-        for task in self.dag:
-            if task not in visited: 
-                self.__dfs__(task, visited, task_order)
-
-        return task_order
-
-
-    '''
-    ** bin-based execution order, where tasks are grouped into bins: a bin is the high-level execution entity **
-    - the order is determined as the minimal possible set of tasks that can be executed together
-    - dependencies to the tasks are used to create bins and each bin is only depdendent on the previous bin
-    - executable is a set of tasks
-
-    default way to assign tasks to bins
-    '''
-    def bin_execution_order(self):
-        bins_dict = {}
-        max_bins = 0
-        task_bins = []
-
-        # PASS-1: assign bins to the tasks
-        for task in self.dag:
-            bin_size = self.__bin_bfs__(task)
-            if max_bins < bin_size:
-                max_bins = bin_size
-
-        # PASS-2: re-adjust task bins for just-in-time execution
-        for task in self.dag:
-            self.__readjust_bins__(task, max_bins, bins_dict)
-
-        for i in range(len(bins_dict)):
-            task_bins.append(bins_dict[i])
-
-        return task_bins
-
-
-    '''
-    DFS on a graph
-    '''
-    def __dfs__(self, start, visited, task_order):
-        visited[start] = True
-        succs = self.successors(start)
-        for succ in succs:
-            if succ not in visited:
-                self.__dfs__(succ, visited, task_order)
-        task_order.insert(0, start)
-
-
-    '''
-    BFS on a graph, with an assigned bin for each visited vertex of the graph
-    '''
-    def __bin_bfs__(self, start):
-        bfs_order = []
-        bfs_order.append(start)
-        task_queue = deque(self.successors(start))
-        n_bins = start.bin
-        for t in task_queue:
-            if t.bin < start.bin + 1:
-                t.bin = start.bin + 1
-                n_bins = t.bin 
-        while len(task_queue) != 0:
-            t = task_queue.popleft()
-            if t not in bfs_order:
-                bfs_order.append(t)
-                t_succs = self.successors(t)
-                for succ in t_succs:
-                    if succ.bin < t.bin + 1:
-                        succ.bin = t.bin + 1
-                        n_bins = succ.bin                    
-                    task_queue.append(succ)
-        return (n_bins + 1)
-
-    
-    '''
-    readjust the order of tasks by readjusting their assigned bins for ** just-in-time ** staging/execution
-    '''
-    def __readjust_bins__(self, task, max_bins, bins_dict):
-        min_bin = max_bins
-        curr_bin = task.bin
-        for succ in self.successors(task):
-            min_bin = min(min_bin, succ.bin)
-
-        task.bin = max(curr_bin, min_bin-1)
-        if task.bin in bins_dict:
-            bins_dict[task.bin].append(task)
-        else:
-            bins_dict[task.bin] = [task]

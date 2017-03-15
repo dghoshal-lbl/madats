@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 from core.task import Task, DataTask
-from core.vds_coordinator import DAGManagement
 from pymongo import MongoClient
 import pymongo
 from db.connection import Connection

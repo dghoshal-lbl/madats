@@ -9,6 +9,10 @@ Dependencies
 Pre-requisites
 ---------------
 
+Install
+--------
+python setup.py install
+
 Usage
 ---------------
 1. Using the VDS API [to be used by programmers]

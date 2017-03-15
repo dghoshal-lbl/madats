@@ -1,4 +1,4 @@
-from core.vds_coordinator import DataManagement, DAGManagement
+from core.vds_coordinator import Coordinator
 from core.task import Task, DataTask
 from db.loader import DbLoader
 from db.monitor import DbMonitor
@@ -14,19 +14,19 @@ def test1():
     data1 = '/scratch/testdir/indata'
     data2 = '/scratch/testdir/outdata'
     
-    data_mgmt = DataManagement(vds)
-    vdo1 = data_mgmt.create_vdo(data1)
+    coordinator = Coordinator(vds)
+    vdo1 = coordinator.create_vdo(data1)
     vdo1.consumers = [task1]
-    vdo2 = data_mgmt.create_vdo(data2)
+    vdo2 = coordinator.create_vdo(data2)
     vdo2.producers = [task1]
     
     vdo3 = vds.copy(vdo1, 'burst')
-    data_mgmt.create_data_task(vdo1, vdo3)
+    coordinator.create_data_task(vdo1, vdo3)
 
     vdo4 = vds.copy(vdo1, 'burst')
-    data_mgmt.create_data_task(vdo1, vdo4)
+    coordinator.create_data_task(vdo1, vdo4)
 
-    dag = data_mgmt.create_dag()
+    dag = coordinator.create_dag()
 
     exe = ExecutionManager('EXECUTION_LOCAL_THREAD')
     exe.execute(dag)
@@ -39,13 +39,13 @@ def test2():
     data1 = '/scratch/testdir/indata'
     data2 = '/scratch/testdir/outdata'
     
-    data_mgmt = DataManagement(vds)
-    vdo1 = data_mgmt.create_vdo(data1)
+    coordinator = Coordinator(vds)
+    vdo1 = coordinator.create_vdo(data1)
     vdo1.consumers = [task1]
-    vdo2 = data_mgmt.create_vdo(data2)
+    vdo2 = coordinator.create_vdo(data2)
     vdo2.producers = [task1]
     
-    dag = data_mgmt.create_dag()
+    dag = coordinator.create_dag()
 
     exe = ExecutionManager('EXECUTION_LOCAL_THREAD')
     exe.execute(dag)
@@ -58,16 +58,16 @@ def test3():
     data1 = '/scratch/testdir/indata'
     data2 = '/scratch/testdir/outdata'
     
-    data_mgmt = DataManagement(vds)
-    vdo1 = data_mgmt.create_vdo(data1)
+    coordinator = Coordinator(vds)
+    vdo1 = coordinator.create_vdo(data1)
     vdo1.consumers = [task1]
-    vdo2 = data_mgmt.create_vdo(data2)
+    vdo2 = coordinator.create_vdo(data2)
     vdo2.producers = [task1]
     
     vdo3 = vds.copy(vdo1, 'css')
-    data_mgmt.create_data_task(vdo1, vdo3, deadline='12:30:00', bandwidth='1000', persist=True)
+    coordinator.create_data_task(vdo1, vdo3, deadline='12:30:00', bandwidth='1000', persist=True)
 
-    dag = data_mgmt.create_dag()
+    dag = coordinator.create_dag()
 
     exe = ExecutionManager('EXECUTION_LOCAL_THREAD')
     exe.execute(dag)
@@ -85,23 +85,22 @@ def test4():
     data2 = '/scratch/testdir/tmpdata'
     data3 = '/scratch/testdir/outdata'
     
-    data_mgmt = DataManagement(vds)
-    vdo0 = data_mgmt.create_vdo(data0)
+    coordinator = Coordinator(vds)
+    vdo0 = coordinator.create_vdo(data0)
     vdo0.consumers = [task0]
-    vdo1 = data_mgmt.create_vdo(data1)
+    vdo1 = coordinator.create_vdo(data1)
     vdo1.consumers = [task1]
-    vdo2 = data_mgmt.create_vdo(data2)
+    vdo2 = coordinator.create_vdo(data2)
     vdo2.producers = [task0]
     vdo2.consumers = [task1]
-    vdo3 = data_mgmt.create_vdo(data3)
+    vdo3 = coordinator.create_vdo(data3)
     vdo3.producers = [task1]
 
     task0.params = ['-i', vdo0, '-o', vdo2]
     task1.params = ['-i', vdo1, vdo2, '-o', vdo3]
     
-    dag = data_mgmt.create_dag()
-    dag_mgmt = DAGManagement(dag)
-    task_order = dag_mgmt.batch_execution_order()
+    dag = coordinator.create_dag()
+    task_order = coordinator.batch_execution_order()
     i = 0
     print('------------------------')
     print('Default workflow stages')
@@ -116,16 +115,15 @@ def test4():
     vdo2_1 = vds.copy(vdo2, 'css')
     vdo3_1 = vds.copy(vdo3, 'css')
 
-    data_mgmt.create_data_task(vdo0, vdo0_1, deadline='12:30:00', bandwidth='1000')
-    data_mgmt.create_data_task(vdo1, vdo1_1, deadline='12:35:00', bandwidth='100')
-    data_mgmt.create_data_task(vdo2, vdo2_1, bandwidth='1000', persist=False)
-    data_mgmt.create_data_task(vdo3_1, vdo3, bandwidth='1000', persist=True)
+    coordinator.create_data_task(vdo0, vdo0_1, deadline='12:30:00', bandwidth='1000')
+    coordinator.create_data_task(vdo1, vdo1_1, deadline='12:35:00', bandwidth='100')
+    coordinator.create_data_task(vdo2, vdo2_1, bandwidth='1000', persist=False)
+    coordinator.create_data_task(vdo3_1, vdo3, bandwidth='1000', persist=True)
 
-    dag = data_mgmt.create_dag()
+    dag = coordinator.create_dag()
 
     print('----------------------')
-    dag_mgmt = DAGManagement(dag)
-    task_bins = dag_mgmt.bin_execution_order()
+    task_bins = coordinator.bin_execution_order()
     i = 0
     print('----------------------')
     print('Task Bins')
