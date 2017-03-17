@@ -1,7 +1,7 @@
-from abstractions.storage_abstraction import StorageAbstract
+from abstractions.system_interfaces import AbstractStorage
 import sys
 
-class MadatsStorageManager(StorageAbstract):
+class MadatsStorage(AbstractStorage):
 
     def get_hierarchy(self):
         '''

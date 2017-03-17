@@ -1,5 +1,5 @@
 '''
-Data management abstraction
+Workflow abstraction: interface to translate any workflow into a collection of VDOs
 '''
 
 import abc
@@ -7,7 +7,25 @@ import os
 from plugins import plugin_loader
 from core.task import DataTask
 
-class DataAbstract():
+class AbstractWorkflow():
+    __metaclass__ = abc.ABCMeta
+
+    def __init__(self):
+        pass
+
+
+    @abc.abstractmethod
+    def parse(self, workflow, type=None, **kwargs):
+        #print('Transform a workflow to a collection of VDOs: data as nodes, processes as edges')
+        raise NotImplementedError()
+
+#############################################################################################
+
+'''
+Data management abstraction
+'''
+
+class AbstractDatamgr():
     __metaclass__ = abc.ABCMeta
 
     def __init__(self):
@@ -116,6 +134,6 @@ class DataAbstract():
 
 
     @abc.abstractmethod
-    def datamgmt_strategy(self, vds, **kwargs):
+    def policy(self, vds, **kwargs):
         #print('Manage VDS by defining data management strategies')
         raise NotImplementedError()

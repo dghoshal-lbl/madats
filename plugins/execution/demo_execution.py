@@ -1,4 +1,4 @@
-from abstractions.execution_abstraction import ExecutionAbstract
+from abstractions.system_interfaces import AbstractExecution
 import tigres
 from core.vds_coordinator import Coordinator
 from core.task import Task, DataTask
@@ -9,16 +9,16 @@ import time
 from utils.dagman import DAGManager
 
 
-class DemoExecutionManager(ExecutionAbstract):
+class DemoExecution(AbstractExecution):
     WAIT_TIME = 5
 
-    def execute_data_task(self, data_task):
+    def wait(self, exec_id):
         pass
 
-    def execute_compute_task(self, compute_task):
-        pass
+    def status(self, exec_id):
+        return 0
 
-    def execute_workflow(self, workflow, **kwargs):
+    def execute(self, dag, async_mode, **kwargs):
         if 'execution' in kwargs:
             execution = kwargs['execution']
         else:
@@ -31,18 +31,14 @@ class DemoExecutionManager(ExecutionAbstract):
             }[execution]
         execution_plugin = tigres.utils.Execution.get(execution)        
         db_loader = DbLoader(collection='tasks')
-        coordinator = Coordinator()
-        vds = coordinator.create_vds(workflow)
-        dag = coordinator.manage_vds(vds)
-        coordinator.destroy_vds(vds)
-
+        
         print('--------------------------------------')
         for k in dag:
             task = k.command
             children = [c.command for c in dag[k]]
             print("{}(T:{})[{}]: {}".format(task, k.type, k.params, children))
         print('--------------------------------------')
-        return
+        return 0
 
         workflow_id = db_loader.insert(dag)
 
@@ -90,7 +86,7 @@ class DemoExecutionManager(ExecutionAbstract):
             db_loader.update_status(task_id, 'RUNNING')
             params = []
             if task.params != None:
-                params = task.get_remapped_params()
+                params = task.params
             ttask = tigres.Task("{}".format(task.__id__), tigres.EXECUTABLE, impl_name=task.command)
             task_array.append(ttask)
             input_array.append(params)
@@ -133,7 +129,7 @@ class DemoExecutionManager(ExecutionAbstract):
             else:
                 params = []
                 if task.params != None:
-                    params = task.get_remapped_params()
+                    params = task.params
                 ttask = tigres.Task("{}".format(task.__id__), tigres.EXECUTABLE, impl_name=task.command)
                 task_array.append(ttask)
                 input_array.append(params)

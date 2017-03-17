@@ -1,16 +1,18 @@
 """
 Plugin naming convention: 
-  modulename: <type>.<name>_<type>.py
+  modulename: <type>.{system}/{data}_interfaces.py
   classname: <Name><Type>Manager
 """
 
 from utils.config import Config
+import pkg_resources
+#import os
 
 '''
 load data management plugin
 '''
-def load_data_plugin():
-    type = 'data'
+def load_datamgr_plugin():
+    type = 'datamgr'
     return __plugin__(type)
 
 
@@ -43,13 +45,27 @@ def load_workflow_plugin():
     return __plugin__(type)
 
 '''
+load scheduling plugin
+'''
+def load_scheduling_plugin():
+    type = 'scheduling'
+    return __plugin__(type)
+
+'''
 get plugin type from the config file and load it
 '''
 def __plugin__(type):
-    config = Config('config/config.ini')
+    #config_file = '../config/config.ini'
+    #config_location = pkg_resources.resource_stream(__name__, config_file)
+    #config_location = os.path.join(__name__, config_file)
+    config_file = 'config.ini'
+    config_location = pkg_resources.resource_filename('config', config_file)
+    print(config_location)
+    config = Config(config_location)
     name = config.get('plugins', type)
+    #modulename = interface + '_interfaces'
     modulename = type + '.' + name + '_' + type
-    classname = name.title() + type.title() + 'Manager'
+    classname = name.title() + type.title()
     plugin = __load_plugin__(modulename, classname, type)
     return plugin
 

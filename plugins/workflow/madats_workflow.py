@@ -1,8 +1,8 @@
 from core.vds import VirtualDataObject
 from core.task import Task
-from abstractions.workflow_abstraction import WorkflowAbstract
+from abstractions.data_interfaces import AbstractWorkflow
 
-class MadatsWorkflowManager(WorkflowAbstract):
+class MadatsWorkflow(AbstractWorkflow):
     def parse(self, workflow, type=None, **kwargs):
         tasks = []
         for t in workflow:

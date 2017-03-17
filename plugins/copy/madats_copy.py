@@ -1,3 +1,9 @@
-from abstractions.copy_abstraction import CopyAbstract
+from abstractions.system_interfaces import AbstractCopy
 
-def MadatsCopyManager(CopyAbstract):
+class MadatsCopy(CopyAbstract):
+    def copy(self, src, dest, async=False, keep_src=True, **kwargs):
+        pass
+
+
+    def poll(self, id, **kwargs):
+        pass

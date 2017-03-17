@@ -1,7 +1,7 @@
-from abstractions.data_abstraction import DataAbstract
+from abstractions.data_interfaces import AbstractDatamgr 
 
-class MadatsDataManager(DataAbstract):
-    def datamgmt_strategy(self, vds, **kwargs):
+class MadatsDatamgr(AbstractDatamgr):
+    def policy(self, vds, **kwargs):
         strategy = None
         if 'strategy' in kwargs:
             strategy = kwargs['strategy']
