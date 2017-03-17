@@ -88,7 +88,6 @@ def plan(vds, **kwargs):
     datamgr_plugin = plugin_loader.load_datamgr_plugin()
     datamgr_plugin.policy(vds, **kwargs)
         
-
 '''
 manage VDS by managing data and executing workflow
 '''
