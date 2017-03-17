@@ -1,5 +1,4 @@
-from core.vds import VirtualDataObject
-from core.task import Task
+from madats.core.task import Task
 from abstractions.data_interfaces import AbstractWorkflow
 
 class MadatsWorkflow(AbstractWorkflow):

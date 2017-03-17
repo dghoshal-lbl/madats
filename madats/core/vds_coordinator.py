@@ -79,7 +79,7 @@ class Coordinator():
     '''
     given a workflow, map it to VDS
     '''
-    def create(self, workflow):
+    def create_vds(self, workflow):
         workflow_plugin = plugin_loader.load_workflow_plugin()
         tasks = workflow_plugin.parse(workflow)
         vds = VirtualDataSpace()
@@ -96,9 +96,9 @@ class Coordinator():
       to a vertex contains the vertices you can reach directly from that vertex
 
     '''
-    def plan(self, vds, **kwargs):
+    def manage_vds(self, vds, **kwargs):
         datamgr_plugin = plugin_loader.load_datamgr_plugin()
-        datamgr_plugin.policy(vds, **kwargs)
+        datamgr_plugin.extend(vds, **kwargs)
         
         extended_dag = {}
         vdo_list = vds.get_vdo_list()
@@ -115,40 +115,17 @@ class Coordinator():
 
         return extended_dag
 
-
-    '''
-    manage VDS by managing data and executing workflow
-    '''
-    def manage(self, dag, async_mode=False, scheduler=None, **kwargs):
-        if scheduler != None:
-            scheduling_plugin = plugin_loader.load_scheduling_plugin()
-            scheduling_plugin.set(scheduler, **kwargs)
-            submit_id = scheduling_plugin.submit(dag, async_mode)
-            # if true that means all jobs are submitted together with dependencies
-            if async_mode == True:
-                scheduling_plugin.wait(submit_id)
-            status = scheduling_plugin.status(submit_id)
-        else:
-            execution_plugin = plugin_loader.load_execution_plugin()
-            exec_id = execution_plugin.execute(dag, async_mode, **kwargs)
-            if async_mode == True:
-                execution_plugin.wait(exec_id)
-            status = execution_plugin.status(exec_id)
-        return status
-     
-
     '''
     query the VDS
     '''
-    def query(self, vds, query):
-        print('Query interface is not yet implemented!')
+    def query_vds(self, vds, query):
         pass
 
 
     '''
     destroy the VDS
     '''
-    def destroy(self, vds):
+    def destroy_vds(self, vds):
         vdos = vds.get_vdo_list()
         for vdo in vdos:
             vds.delete(vdo)

@@ -43,12 +43,11 @@ class ExecutionManager():
         print('Data-task {} completed'.format(id))
 
 
-    def execute(self, dag):
-        db_loader = DbLoader(collection='tasks')
-        workflow_id = db_loader.insert(dag)
+    def execute(self, coordinator):
+        #db_loader = DbLoader(collection='tasks')
+        #workflow_id = db_loader.insert(dag)
 
-        dag_mgmt = DAGManagement(dag)
-        task_bins = dag_mgmt.bin_execution_order()
+        task_bins = coordinator.bin_execution_order()
         
         tigres.start(name="TigresWF-{}-{}".format(workflow_id, self.execution_name),
                      log_dest="TigresWF-{}-{}.log".format(workflow_id, self.execution_name),

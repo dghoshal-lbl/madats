@@ -2,7 +2,7 @@
 a compute-task and data-task specification to be used by VDS Coordinator
 """
 
-from core.vds import VirtualDataObject
+from madats.core.vds import VirtualDataObject
 import uuid
 import storage.storage_manager as storage_manager
 

@@ -5,7 +5,7 @@ Workflow abstraction: interface to translate any workflow into a collection of V
 import abc
 import os
 from plugins import plugin_loader
-from core.task import DataTask
+from madats.core.task import DataTask
 
 class AbstractWorkflow():
     __metaclass__ = abc.ABCMeta
@@ -101,13 +101,13 @@ class AbstractDatamgr():
             for task in vdo_src.consumers:
                 params = task.params
                 for i in range(len(params)):
-                    if task.params[i] == dest_data:
-                        task.params[i] = src_data
+                    if task.params[i] == src_data:
+                        task.params[i] = dest_data
             for task in vdo_src.producers:
                 params = task.params
                 for i in range(len(params)):
-                    if task.params[i] == dest_data:
-                        task.params[i] = src_data            
+                    if task.params[i] == src_data:
+                        task.params[i] = dest_data            
 
             """
             create a data task and add it to the respective VDOs
