@@ -60,10 +60,8 @@ def __plugin__(type):
     #config_location = os.path.join(__name__, config_file)
     config_file = 'config.ini'
     config_location = pkg_resources.resource_filename('config', config_file)
-    print(config_location)
     config = Config(config_location)
     name = config.get('plugins', type)
-    #modulename = interface + '_interfaces'
     modulename = type + '.' + name + '_' + type
     classname = name.title() + type.title()
     plugin = __load_plugin__(modulename, classname, type)
@@ -81,5 +79,5 @@ def __load_plugin__(modulename, classname, category):
         class_obj = class_()
         return class_obj
     except Exception as e:
-        print("No {} plugin : {}, Error: {}".format(category, modulename, e.message))
+        print("Error loading {} plugin : {}, Error: {}".format(category, modulename, e.message))
         raise e

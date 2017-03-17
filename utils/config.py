@@ -17,7 +17,6 @@ class Config():
     def get(self, section, key):
         config = ConfigParser.ConfigParser()
         config.read(self.__config_file__)
-        print(self.__config_file__, section, key)
         value = config.get(section, key)
         return value
 

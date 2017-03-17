@@ -52,12 +52,12 @@ class AbstractDatamgr():
         if len(vdo_src.producers) == 0 and len(vdo_src.consumers) > 0:
             dt = vdo_src.__id__ + vdo_dest.__id__
             if dt in self.__data_tasks__:
-                print('Data task ({}) already exists'.format(dt))
+                #print('Data task ({}) already exists'.format(dt))
                 return
             else:
                 src = vdo_src.storage_id + vdo_src.relative_path 
                 dest = vdo_dest.storage_id + vdo_dest.relative_path 
-                print('Data task ({} -> {}) created'.format(src, dest))
+                #print('Data task ({} -> {}) created'.format(src, dest))
 
             """
             update the I/O parameters if data is moved
@@ -85,15 +85,14 @@ class AbstractDatamgr():
         # if staging out data
         elif (len(vdo_src.consumers) == 0 and len(vdo_src.producers) > 0) or \
                 (len(vdo_src.consumers) > 0 and len(vdo_src.producers) > 0 and vdo_src.persist == True):
-            #dt = vdo_dest.__id__ + '=>' + vdo_src.__id__
             dt = vdo_src.__id__ + vdo_dest.__id__
             if dt in self.__data_tasks__:
-                print('Data task ({}) already exists'.format(dt))
+                #print('Data task ({}) already exists'.format(dt))
                 return
             else:
                 src = vdo_src.storage_id + vdo_src.relative_path 
                 dest = vdo_dest.storage_id + vdo_dest.relative_path 
-                print('Data task ({} -> {}) created'.format(src, dest))
+                #print('Data task ({} -> {}) created'.format(src, dest))
                 
             """
             update the I/O paramters to use the moved data
