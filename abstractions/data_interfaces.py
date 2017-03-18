@@ -133,6 +133,6 @@ class AbstractDatamgr():
 
 
     @abc.abstractmethod
-    def policy(self, vds, **kwargs):
+    def policy_engine(self, vds, policy, **kwargs):
         #print('Manage VDS by defining data management strategies')
         raise NotImplementedError()

@@ -84,10 +84,13 @@ creates a DAG of the extended workflow containing data tasks and compute tasks
 - it's an adjacency list representation of the graph where the list pertaining 
 to a vertex contains the vertices you can reach directly from that vertex
 '''
-def plan(vds, **kwargs):
+def plan(vds, policy, **kwargs):
     datamgr_plugin = plugin_loader.load_datamgr_plugin()
-    datamgr_plugin.policy(vds, **kwargs)
-        
+    status = datamgr_plugin.policy_engine(vds, policy, **kwargs)
+    
+    return status
+
+
 '''
 manage VDS by managing data and executing workflow
 '''

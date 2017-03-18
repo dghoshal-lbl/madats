@@ -1,14 +1,10 @@
 from abstractions.data_interfaces import AbstractDatamgr 
 
 class MadatsDatamgr(AbstractDatamgr):
-    def policy(self, vds, **kwargs):
-        strategy = None
-        if 'strategy' in kwargs:
-            strategy = kwargs['strategy']
-
-        if strategy == 'WFA':
+    def policy_engine(self, vds, policy, **kwargs):
+        if policy == 'WFA':
             self.__madats_wfa__(vds)
-        elif strategy == 'STA':
+        elif policy == 'STA':
             self.__madats_sta__(vds)
         else:
             self.__default__(vds)
@@ -16,12 +12,12 @@ class MadatsDatamgr(AbstractDatamgr):
 
     def __madats_wfa__(self, vds):
         # TODO implementation
-        pass
+        return 0
             
 
     def __madats_sta__(self, vds):
         # TODO implementation
-        pass
+        return 0
 
             
     def __default__(self, vds):
@@ -29,5 +25,5 @@ class MadatsDatamgr(AbstractDatamgr):
         for vdo in vdos:
             new_vdo = vds.copy(vdo, 'burst')
             self.create_data_task(vds, vdo, new_vdo)
-            
+        return 0
             

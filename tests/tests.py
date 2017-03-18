@@ -15,10 +15,13 @@ def test0():
         workflow[task]['walltime'] = '00:30:00'
         workflow[task]['cpus'] = 2
 
-    vds = madats.create(workflow)
-    madats.plan(vds)
-    madats.manage(vds)
-    madats.destroy(vds)
+    policies = ['WFA', 'STA', 'PASSIVE']
+    for policy in policies:
+        print("****** Policy: {} ******".format(policy))
+        vds = madats.create(workflow)
+        madats.plan(vds, policy)
+        madats.manage(vds)
+        madats.destroy(vds)
     
 if __name__ == '__main__':
     test0()
