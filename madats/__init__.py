@@ -1,5 +1,5 @@
-from madats.coordinator import create, plan, manage, query, destroy
+from madats.coordinator import create, map, plan, manage, query, destroy
 
-__all__ = ['create', 'plan', 'manage', 'query', 'destroy']
+__all__ = ['create', 'map', 'plan', 'manage', 'query', 'destroy']
 
 

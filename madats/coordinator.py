@@ -62,21 +62,31 @@ def __map2vds__(vds, task, data_vdo_map, storage_plugin, storage_hierarchy):
 
 
 '''
+creates a virtual data space (VDS) in MaDaTS
+'''
+def create():
+    vds = VirtualDataSpace()
+    return vds
+
+'''
 given a workflow, map it to VDS
 '''
-def create(workflow):
+def map(vds, workflow):
     storage_plugin = plugin_loader.load_storage_plugin()
     storage_hierarchy = storage_plugin.get_hierarchy()
 
     workflow_plugin = plugin_loader.load_workflow_plugin()
     tasks = workflow_plugin.parse(workflow)
     data_vdo_map = {}
-    vds = VirtualDataSpace()
     for task in tasks:
         __map2vds__(vds, task, data_vdo_map, storage_plugin, storage_hierarchy)
-    
-    return vds
 
+
+'''
+adds a VDO to the VDS
+'''
+def add(vdo, vds):
+   vds.add(vdo) 
 
 '''
 manage a VDS using different data management strategies
