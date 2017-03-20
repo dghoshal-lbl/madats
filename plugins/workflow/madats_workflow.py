@@ -1,4 +1,4 @@
-from madats.core.task import Task
+from madats.vds import Task
 from abstractions.data_interfaces import AbstractWorkflow
 
 class MadatsWorkflow(AbstractWorkflow):
@@ -17,3 +17,17 @@ class MadatsWorkflow(AbstractWorkflow):
             tasks.append(task)
             
         return tasks
+
+if __name__ == '__main__':
+    workflow = {}
+    workflow['task0'] = {}
+    workflow['task0']['inputs'] = ['/scratch/data0']
+    workflow['task0']['outputs'] = ['/scratch/data1']
+    workflow['task0']['params'] = ['-cf']
+    workflow['task0']['command'] = 'ls'
+    workflow['task0']['partition'] = 'debug'
+    workflow['task0']['walltime'] = '00:30:00'
+    workflow['task0']['cpus'] = 2    
+
+    wf = MadatsWorkflow()
+    wf.parse(workflow)

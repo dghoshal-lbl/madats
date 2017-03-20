@@ -24,6 +24,6 @@ class MadatsDatamgr(AbstractDatamgr):
         vdos = vds.get_vdo_list()
         for vdo in vdos:
             new_vdo = vds.copy(vdo, 'burst')
-            self.create_data_task(vds, vdo, new_vdo)
+            self.replace_vdo(vds, vdo, new_vdo)
         return 0
             

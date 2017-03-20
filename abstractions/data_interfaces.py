@@ -4,8 +4,7 @@ Workflow abstraction: interface to translate any workflow into a collection of V
 
 import abc
 import os
-from plugins import plugin_loader
-from madats.core.task import DataTask
+from madats.vds import DataTask
 
 class AbstractWorkflow():
     __metaclass__ = abc.ABCMeta
@@ -31,33 +30,21 @@ class AbstractDatamgr():
     def __init__(self):
         #print('Data Management Abstraction')
         self.__data_tasks__ = {}
-        self.__storage_plugin__ = plugin_loader.load_storage_plugin()
-        self.__storage_hierarchy__ = self.__storage_plugin__.get_hierarchy()
 
-    def __get_abspath__(self, vdo):
-        mount_pt = self.__storage_plugin__.get_storage_path(self.__storage_hierarchy__, vdo.storage_id)
-        relative_path = vdo.relative_path
-        abspath = os.path.join(mount_pt, relative_path)
-
-        return abspath
-        
 
     '''
     creates a data task to move a virtual data object to a different storage layer(s)
     '''
-    def create_data_task(self, vds, vdo_src, vdo_dest, **kwargs):
-        src_data = self.__get_abspath__(vdo_src)
-        dest_data = self.__get_abspath__(vdo_dest)
+    def replace_vdo(self, vds, vdo_src, vdo_dest, **kwargs):
+        src_data = vdo_src.abspath
+        dest_data = vdo_dest.abspath
+        #print("Replace vdo: {}[{}] {}[{}]".format(src_data, vdo_src.storage_id, dest_data, vdo_dest.storage_id))
         # if staging in data
         if len(vdo_src.producers) == 0 and len(vdo_src.consumers) > 0:
             dt = vdo_src.__id__ + vdo_dest.__id__
             if dt in self.__data_tasks__:
                 #print('Data task ({}) already exists'.format(dt))
                 return
-            else:
-                src = vdo_src.storage_id + vdo_src.relative_path 
-                dest = vdo_dest.storage_id + vdo_dest.relative_path 
-                #print('Data task ({} -> {}) created'.format(src, dest))
 
             """
             update the I/O parameters if data is moved
@@ -73,7 +60,7 @@ class AbstractDatamgr():
                     if task.params[i] == src_data:
                         task.params[i] = dest_data            
 
-            data_task = DataTask(src_data, dest_data, **kwargs)
+            data_task = DataTask(vdo_src, vdo_dest, **kwargs)
             self.__data_tasks__[dt] = data_task
             """
             - data stagein task becomes the consumer of the original data
@@ -83,16 +70,12 @@ class AbstractDatamgr():
             vdo_dest.producers = [data_task]
             vdo_src.consumers = [data_task]
         # if staging out data
-        elif (len(vdo_src.consumers) == 0 and len(vdo_src.producers) > 0) or \
-                (len(vdo_src.consumers) > 0 and len(vdo_src.producers) > 0 and vdo_src.persist == True):
+        elif (len(vdo_src.consumers) == 0 and len(vdo_src.producers) > 0):
+        #or (len(vdo_src.consumers) > 0 and len(vdo_src.producers) > 0 and vdo_src.persist == True):
             dt = vdo_src.__id__ + vdo_dest.__id__
             if dt in self.__data_tasks__:
                 #print('Data task ({}) already exists'.format(dt))
                 return
-            else:
-                src = vdo_src.storage_id + vdo_src.relative_path 
-                dest = vdo_dest.storage_id + vdo_dest.relative_path 
-                #print('Data task ({} -> {}) created'.format(src, dest))
                 
             """
             update the I/O paramters to use the moved data
@@ -111,13 +94,13 @@ class AbstractDatamgr():
             """
             create a data task and add it to the respective VDOs
             """
-            data_task = DataTask(dest_data, src_data, **kwargs)
+            data_task = DataTask(vdo_dest, vdo_src, **kwargs)
             self.__data_tasks__[dt] = data_task
 
-            vdo_dest.producers = [data_task]        
-            vdo_src.consumers.append(data_task)
-            vdo_dest.consumers = []
-        # for non-persistent intermediate data
+            vdo_src.producers = [data_task]        
+            vdo_dest.consumers.append(data_task)
+            vdo_src.consumers = []
+        # for intermediate data
         else:
             for task in vdo_dest.consumers:
                 params = task.params
@@ -129,7 +112,18 @@ class AbstractDatamgr():
                 for i in range(len(params)):
                     if task.params[i] == src_data:
                         task.params[i] = dest_data            
-            vds.delete(vdo_src)
+            # if intermediate data needs to persist then create a stage out data task
+            if vdo_src.persistence == True:
+                dt = vdo_src.__id__ + vdo_dest.__id__
+                if dt in self.__data_tasks__:
+                    return
+                data_task = DataTask(vdo_dest, vdo_src, **kwargs)
+                self.__data_tasks__[dt] = data_task
+                vdo_src.producers = [data_task]        
+                vdo_dest.consumers.append(data_task)
+                vdo_src.consumers = []
+            else:
+                vds.delete(vdo_src)
 
 
     @abc.abstractmethod

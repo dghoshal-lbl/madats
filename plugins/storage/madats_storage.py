@@ -7,7 +7,7 @@ class MadatsStorage(AbstractStorage):
         '''
         TODO read properties file containing the storage hierarchy properties
         '''
-        storage_hierarchy = {'scratch': '/scratch/', 'burst': '/dw/', 'css': '/css/'}
+        storage_hierarchy = {'archive': '/archive/', 'scratch': '/scratch/', 'burst': '/dw/', 'css': '/css/'}
         return storage_hierarchy
 
     def get_id_path(self, storage_hierarchy, data_object):

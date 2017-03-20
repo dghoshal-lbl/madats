@@ -1,7 +1,6 @@
 from abstractions.system_interfaces import AbstractExecution
 import tigres
 import time
-from utils.dagman import DAGManager
 
 
 class DemoExecution(AbstractExecution):

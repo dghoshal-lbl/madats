@@ -138,6 +138,9 @@ class AbstractCopy():
         #print('Data copy abstraction')
         pass
         
+    # TODO: complete implementation
+    def run(self, command):
+        print('Running copy command: {}'.format(command))
 
     @abc.abstractmethod
     def copy(self, src, dest, async=False, keep_src=True, **kwargs):

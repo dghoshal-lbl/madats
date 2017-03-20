@@ -12,8 +12,8 @@ import uuid
 import os
 import shlex
 from plugins import plugin_loader
-from madats.core.vds import VirtualDataSpace, VirtualDataObject
-from madats.core.task import Task, DataTask
+from madats.vds import VirtualDataSpace, VirtualDataObject
+from madats.vds import Task, DataTask
 
 '''
 Coordinates the movement of data between multiple storage tiers through VDS (manages VDS and virtual data objects)
@@ -24,26 +24,29 @@ Coordinates the movement of data between multiple storage tiers through VDS (man
 '''
 creates a virtual data object (vdo) for a file system data object
 '''
-def __create_vdo__(data_object, storage_plugin, storage_hierarchy):
-    
-    storage_id, relative_path = storage_plugin.get_id_path(storage_hierarchy, data_object)
-    
-    if storage_id and relative_path:
-        vdo = VirtualDataObject(storage_id, relative_path)
-        return vdo
-    else:
-        print('Invalid data object')
-        return None
+def __create_vdo__(data_object, dataprop):
+    vdo = VirtualDataObject(data_object)
+    if 'size' in dataprop:
+        vdo.set_size(dataprop['size'])
+    if 'persist' in dataprop:
+        vdo.persist(dataprop['persist'])
+    if 'replicate' in dataprop:
+        vdo.replicate(dataprop['replicate'])
+        
+    return vdo
 
 
 '''
 maps a task into a VDS, making it a collection of VDOs
 '''
-def __map2vds__(vds, task, data_vdo_map, storage_plugin, storage_hierarchy):
+def __map2vds__(vds, task, data_vdo_map, data_properties):
     for input in task.inputs:
         data_object = os.path.abspath(input)
         if data_object not in data_vdo_map:
-            vdo = __create_vdo__(data_object, storage_plugin, storage_hierarchy)
+            dataprop = {}
+            if data_object in data_properties:
+                dataprop = data_properties[data_object]
+            vdo = __create_vdo__(data_object, dataprop)
             data_vdo_map[data_object] = vdo
         else:
             vdo = data_vdo_map[data_object]
@@ -53,7 +56,10 @@ def __map2vds__(vds, task, data_vdo_map, storage_plugin, storage_hierarchy):
     for output in task.outputs:
         data_object = os.path.abspath(output)
         if data_object not in data_vdo_map:
-            vdo = __create_vdo__(data_object, storage_plugin, storage_hierarchy)
+            dataprop = {}
+            if data_object in data_properties:
+                dataprop = data_properties[data_object]
+            vdo = __create_vdo__(data_object, dataprop)
             data_vdo_map[data_object] = vdo
         else:
             vdo= data_vdo_map[data_object]
@@ -71,22 +77,13 @@ def create():
 '''
 given a workflow, map it to VDS
 '''
-def map(vds, workflow):
-    storage_plugin = plugin_loader.load_storage_plugin()
-    storage_hierarchy = storage_plugin.get_hierarchy()
-
+def map(vds, workflow, data_properties={}):
     workflow_plugin = plugin_loader.load_workflow_plugin()
+    #workflow_plugin = plugins.workflow_plugin
     tasks = workflow_plugin.parse(workflow)
     data_vdo_map = {}
     for task in tasks:
-        __map2vds__(vds, task, data_vdo_map, storage_plugin, storage_hierarchy)
-
-
-'''
-adds a VDO to the VDS
-'''
-def add(vdo, vds):
-   vds.add(vdo) 
+        __map2vds__(vds, task, data_vdo_map, data_properties)
 
 '''
 manage a VDS using different data management strategies
@@ -95,6 +92,8 @@ creates a DAG of the extended workflow containing data tasks and compute tasks
 to a vertex contains the vertices you can reach directly from that vertex
 '''
 def plan(vds, policy, **kwargs):
+    #plugins = Plugins()
+    #datamgr_plugin = plugins.datamgr_plugin
     datamgr_plugin = plugin_loader.load_datamgr_plugin()
     status = datamgr_plugin.policy_engine(vds, policy, **kwargs)
     
@@ -107,6 +106,7 @@ manage VDS by managing data and executing workflow
 def manage(vds, async_mode=False, scheduler=None, **kwargs):
     dag = {}
     vdo_list = vds.get_vdo_list()
+    #plugins = Plugins()
     for vdo in vdo_list:
         for prod in vdo.producers:
             if prod not in dag:
@@ -119,6 +119,7 @@ def manage(vds, async_mode=False, scheduler=None, **kwargs):
                 dag[con] = []
 
     if scheduler != None:
+        #scheduling_plugin = plugins.scheduling_plugin
         scheduling_plugin = plugin_loader.load_scheduling_plugin()
         scheduling_plugin.set(scheduler, **kwargs)
         submit_id = scheduling_plugin.submit(dag, async_mode)
@@ -127,6 +128,7 @@ def manage(vds, async_mode=False, scheduler=None, **kwargs):
             scheduling_plugin.wait(submit_id)
         status = scheduling_plugin.status(submit_id)
     else:
+        #execution_plugin = plugins.execution_plugin
         execution_plugin = plugin_loader.load_execution_plugin()
         exec_id = execution_plugin.execute(dag, async_mode, **kwargs)
         if async_mode == True:

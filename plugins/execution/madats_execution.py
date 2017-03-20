@@ -1,9 +1,9 @@
 from abstractions.system_interfaces import AbstractExecution
 import tigres
-from madats.core.task import Task, DataTask
+from madats.vds import Task, DataTask
+from plugins import plugin_loader
 import time
 from utils import dagman
-
 
 class MadatsExecution(AbstractExecution):
     WAIT_TIME = 5
@@ -44,7 +44,9 @@ class MadatsExecution(AbstractExecution):
 
     def __manage_data_tasks__(self, data_task):        
         print('Waiting for data-task {}'.format(data_task.__id__))
-        print("{} {}".format(data_task.command, data_task.params))
+        #print("{} {}".format(data_task.command, data_task.params))
+        copy_plugin = plugin_loader.load_copy_plugin()
+        copy_plugin.copy(data_task.vdo_src, data_task.vdo_dest)
         print('Data-task {} completed'.format(data_task.__id__))
 
 
