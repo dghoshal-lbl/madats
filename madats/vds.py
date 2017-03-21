@@ -25,12 +25,9 @@ class Task():
     COMPUTE = 0
     DATA = 1
 
-    def __init__(self, type = COMPUTE, **kwargs):
+    def __init__(self, command='', type=COMPUTE, **kwargs):
         self.__id__  = uuid.uuid4()
-        if 'command' in kwargs:
-            self.command = kwargs['command']
-        else:
-            self.command = ''
+        self.command = command
         self.inputs = []
         self.outputs = []
         self.params = []
@@ -43,6 +40,8 @@ class Task():
         self.bin = 0
         self.type = type
         self.kwargs = kwargs
+        self.pre_exec = []
+        self.post_exec = []
 
     def add_param(self, param):
         if isinstance(param, VirtualDataObject) == True:
@@ -55,7 +54,7 @@ class Task():
 class DataTask(Task):
     def __init__(self, vdo_src, vdo_dest, **kwargs):
         #print('Datatask: {} {}'.format(vdo_src.abspath, vdo_dest.abspath))
-        Task.__init__(self, Task.DATA, **kwargs)
+        Task.__init__(self, type=Task.DATA, **kwargs)
         self.vdo_src = vdo_src
         self.vdo_dest = vdo_dest
         #self.params = [vdo_src.abspath, vdo_dest.abspath]

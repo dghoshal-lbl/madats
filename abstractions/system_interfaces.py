@@ -68,33 +68,20 @@ Batch scheduling abstraction
 class AbstractScheduling():
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self):
-        self.__scheduler__ = {
-            'slurm': self.__slurm__,
-            'pbs': self.__pbs__
-            }
-        
+    def __init__(self):        
+        self.__scheduler__ = ''
         self.__opts__ = {}
         self.__directive__ = ''
         self.__run_cmd__ = ''
         self.__submit_cmd__ = ''
         self.__query_cmd__ = ''
-        self.__scheduler_opts__ = {}
+        self.pre_exec_stmts = []
+        self.post_exec_stmts = []
 
 
+    @abc.abstractmethod
     def set(self, scheduler, **kwargs):
-        self.__scheduler__[scheduler]()
-        self.__scheduler_opts__ = {
-            'directive': self.__directive__,
-            'run_cmd': self.__run_cmd__,
-            'submit_cmd': self.__submit_cmd__,
-            'query_cmd': self.__query_cmd__,
-            'opts': self.__opts__,
-            'extras': extraopts
-            }
-        for k in kwargs:
-            self.__scheduler_opts__[k] = kwargs[k]
-
+        raise NotImplementedError()
 
     @abc.abstractmethod
     def submit(self, dag, async_mode):
@@ -104,21 +91,22 @@ class AbstractScheduling():
         3. submit job scripts
         4. return the job submission id
         """
-        pass
+        raise NotImplementedError()
+
 
     @abc.abstractmethod
-    def wait(self, job_id):
+    def wait(self, job_ids):
         """
-        blocking wait for the job to finish
+        blocking wait for the jobs to finish
         """
-        pass
+        raise NotImplementedError()
 
     @abc.abstractmethod
-    def status(self, job_id):
+    def status(self, job_ids):
         """
         get status of the job
         """
-        pass
+        raise NotImplementedError()
 
     '''
     @abc.abstractmethod

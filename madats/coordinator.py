@@ -122,11 +122,11 @@ def manage(vds, async_mode=False, scheduler=None, **kwargs):
         #scheduling_plugin = plugins.scheduling_plugin
         scheduling_plugin = plugin_loader.load_scheduling_plugin()
         scheduling_plugin.set(scheduler, **kwargs)
-        submit_id = scheduling_plugin.submit(dag, async_mode)
+        submit_ids = scheduling_plugin.submit(dag, async_mode)
         # if true that means all jobs are submitted together with dependencies
         if async_mode == True:
-            scheduling_plugin.wait(submit_id)
-        status = scheduling_plugin.status(submit_id)
+            scheduling_plugin.wait(submit_ids)
+        status = scheduling_plugin.status(submit_ids)
     else:
         #execution_plugin = plugins.execution_plugin
         execution_plugin = plugin_loader.load_execution_plugin()
