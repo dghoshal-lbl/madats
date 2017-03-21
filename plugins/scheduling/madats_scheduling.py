@@ -21,7 +21,20 @@ class MadatsScheduling(AbstractScheduling):
 
 
     def __pbs__(self):
-        pass
+        self.__directive__ = '#PBS'
+        self.__run_cmd__ = 'aprun'
+        self.__submit_cmd__ = 'qsub'
+        self.__query_cmd__ = 'qstat' 
+        self.__opts__ = {
+            'cpus': '-N',
+            'cpus_per_task': '-c',
+            'walltime': '-t',
+            'queue': '-q',
+            'account': '-a',
+            'job': '-j',
+            'outlog': '-o',
+            'errlog': '-e'
+            }
 
 
     # TODO: implementation
