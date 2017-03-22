@@ -41,7 +41,8 @@ maps a task into a VDS, making it a collection of VDOs
 '''
 def __map2vds__(vds, task, data_vdo_map, data_properties):
     for input in task.inputs:
-        data_object = os.path.abspath(input)
+        #data_object = os.path.abspath(input)
+        data_object = input
         if data_object not in data_vdo_map:
             dataprop = {}
             if data_object in data_properties:
@@ -54,7 +55,8 @@ def __map2vds__(vds, task, data_vdo_map, data_properties):
         vds.add(vdo)
 
     for output in task.outputs:
-        data_object = os.path.abspath(output)
+        #data_object = os.path.abspath(output)
+        data_object = output
         if data_object not in data_vdo_map:
             dataprop = {}
             if data_object in data_properties:
@@ -103,7 +105,7 @@ def plan(vds, policy, **kwargs):
 '''
 manage VDS by managing data and executing workflow
 '''
-def manage(vds, async_mode=False, scheduler=None, **kwargs):
+def manage(vds, async=False, scheduler=None, auto_exec=True, **kwargs):
     dag = {}
     vdo_list = vds.get_vdo_list()
     #plugins = Plugins()
@@ -114,26 +116,31 @@ def manage(vds, async_mode=False, scheduler=None, **kwargs):
             for cons in vdo.consumers:
                 if cons not in dag[prod]:
                     dag[prod].append(cons)
+                    prod.add_successor(cons)
+                    cons.add_predecessor(prod)
         for con in vdo.consumers:
             if con not in dag:
                 dag[con] = []
 
+    status = 0
     if scheduler != None:
         #scheduling_plugin = plugins.scheduling_plugin
         scheduling_plugin = plugin_loader.load_scheduling_plugin()
         scheduling_plugin.set(scheduler, **kwargs)
-        submit_ids = scheduling_plugin.submit(dag, async_mode)
-        # if true that means all jobs are submitted together with dependencies
-        if async_mode == True:
-            scheduling_plugin.wait(submit_ids)
-        status = scheduling_plugin.status(submit_ids)
+        submit_ids = scheduling_plugin.submit(dag, async, auto_exec)
+        if auto_exec == True:
+            # if async is true that means all jobs are submitted together with dependencies
+            if async == True:
+                scheduling_plugin.wait(submit_ids)
+            status = scheduling_plugin.status(submit_ids)
     else:
         #execution_plugin = plugins.execution_plugin
         execution_plugin = plugin_loader.load_execution_plugin()
-        exec_id = execution_plugin.execute(dag, async_mode, **kwargs)
-        if async_mode == True:
-            execution_plugin.wait(exec_id)
-        status = execution_plugin.status(exec_id)
+        exec_id = execution_plugin.execute(dag, async, auto_exec, **kwargs)
+        if auto_exec == True:
+            if async == True:
+                execution_plugin.wait(exec_id)
+            status = execution_plugin.status(exec_id)
     return status
      
 

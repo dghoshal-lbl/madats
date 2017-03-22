@@ -61,8 +61,10 @@ def test2():
         workflow[task]['walltime'] = '00:30:00'
         workflow[task]['cpus'] = 2
 
-    workflow['task0']['inputs'] = ['/archive/data-1'] 
-    workflow['task0']['params'] = ['/archive/data-1', '/scratch/data0']
+    workflow['task0']['inputs'] = ['A:/home/dghoshal/data-1'] 
+    workflow['task0']['params'] = ['A:/home/dghoshal/data-1', '/scratch/data0']
+    #workflow['task0']['inputs'] = ['/archive/data-1'] 
+    #workflow['task0']['params'] = ['/archive/data-1', '/scratch/data0']
     dataprops = {'/scratch/data0': {'persist': True}}
     policies = ['PASSIVE']
     for policy in policies:
@@ -70,6 +72,8 @@ def test2():
         vds = madats.create()
         madats.map(vds, workflow, dataprops)
         madats.plan(vds, policy)
+        #madats.manage(vds, scheduler='slurm', auto_exec=False)
+        #madats.manage(vds, auto_exec=False)
         madats.manage(vds)
         madats.destroy(vds)
 
@@ -97,7 +101,6 @@ def test3():
         vdo2.add_consumer(task2)
         vdo3.add_producer(task2)
         vdo2.persist(True)
-        vds = madats.create()
         vds.add(vdo1)
         vds.add(vdo2)
         vds.add(vdo3)
@@ -116,7 +119,7 @@ def test4():
         vdo3 = madats.vds.VirtualDataObject('/scratch/data2')
         task1 = madats.vds.Task()
         task1.command = 'echo task0'
-        ## either use filesystem data objects
+        ## either use filesystem data objects that are mapped to VDS
         task1.add_param('/scratch/data0')
         task1.add_param('/scratch/data1')
         task2 = madats.vds.Task()
@@ -130,14 +133,14 @@ def test4():
         vdo2.add_consumer(task2)
         vdo3.add_producer(task2)
         vdo2.persist(True)
-        vds = madats.create()
         vds.add(vdo1)
         vds.add(vdo2)
         vds.add(vdo3)
         madats.plan(vds, policy)
+        #madats.manage(vds, scheduler='slurm', auto_exec=False)
         madats.manage(vds, scheduler='slurm')
         madats.destroy(vds)
     
 if __name__ == '__main__':
-    test4()
+    test2()
 

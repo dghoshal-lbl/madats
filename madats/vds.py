@@ -34,6 +34,7 @@ class Task():
         self.partition = ''
         self.walltime = ''
         self.cpus = 0
+        self.queue = ''
         self.account = ''
         self.predecessors = []
         self.successors = []
@@ -43,11 +44,20 @@ class Task():
         self.pre_exec = []
         self.post_exec = []
 
+    def add_predecessor(self, pred):
+        self.predecessors.append(pred)
+
+    def add_successor(self, succ):
+        self.successors.append(succ)
+
     def add_param(self, param):
         if isinstance(param, VirtualDataObject) == True:
             self.params.append(param.abspath)
         else:
             self.params.append(param)
+
+    def get_command(self):
+        return self.command
 
 ##########################################################################
 
@@ -57,10 +67,11 @@ class DataTask(Task):
         Task.__init__(self, type=Task.DATA, **kwargs)
         self.vdo_src = vdo_src
         self.vdo_dest = vdo_dest
+        #print(vdo_src.storage_id, vdo_dest.storage_id)
         #self.params = [vdo_src.abspath, vdo_dest.abspath]
         self.add_param(vdo_src)
         self.add_param(vdo_dest)
-        
+        self.command = 'madats-copy'
 
 ##########################################################################
 
@@ -73,11 +84,11 @@ class VirtualDataObject():
     # should have the `abspath' attribute as well
     #def __init__(self, storage_id, relative_path):
     def __init__(self, datapath):
-        self.abspath = os.path.abspath(datapath)
         storage_hierarchy = storage_plugin.get_hierarchy()
         storage_id, relative_path = storage_plugin.get_id_path(storage_hierarchy, datapath)
         self.storage_id = storage_id
         self.relative_path = relative_path # relative to storage mount point        
+        self.abspath = datapath
         #mount_pt = storage_plugin.get_storage_path(storage_hierarchy, storage_id)
         #self.abspath = os.path.join(mount_pt, relative_path)
         vds_path = os.path.join(__VDS_MOUNTPT__, relative_path)
@@ -100,7 +111,11 @@ class VirtualDataObject():
             sys.exit(-1)
 
     def add_consumer(self, task):
-        self.consumers.append(task)
+        if isinstance(task, Task) == True or isinstance(task, DataTask) == True:
+            self.consumers.append(task)
+        else:
+            print('TypeError in adding producer: Expected Task, found {}'.format(task))
+            sys.exit(-1)
 
     '''
     persist the VDO outside of the VDS

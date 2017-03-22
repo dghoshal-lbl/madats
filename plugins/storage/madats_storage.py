@@ -7,7 +7,8 @@ class MadatsStorage(AbstractStorage):
         '''
         TODO read properties file containing the storage hierarchy properties
         '''
-        storage_hierarchy = {'archive': '/archive/', 'scratch': '/scratch/', 'burst': '/dw/', 'css': '/css/'}
+        storage_hierarchy = {'archive': 'A:/home/dghoshal/', 'scratch': '/scratch/', 'burst': '/dw/', 'css': '/css/'}
+        #storage_hierarchy = {'archive': '/archive/', 'scratch': '/scratch/', 'burst': '/dw/', 'css': '/css/'}
         return storage_hierarchy
 
     def get_id_path(self, storage_hierarchy, data_object):
@@ -19,7 +20,7 @@ class MadatsStorage(AbstractStorage):
                 relative_path = data_object.replace(storage_hierarchy[k], '')
                 return k, relative_path
         print('Unknown storage path: no storage identifier found for the data object!')
-        return None, None
+        return None, None, None
 
     def get_storage_path(self, storage_hierarchy, storage_id):
         if storage_id in storage_hierarchy:

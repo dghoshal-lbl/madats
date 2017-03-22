@@ -48,7 +48,7 @@ class AbstractExecution():
         pass
 
     @abc.abstractmethod
-    def execute(self, dag, async_mode):
+    def execute(self, dag, async, auto_exec, **kwargs):
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -84,7 +84,7 @@ class AbstractScheduling():
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def submit(self, dag, async_mode):
+    def submit(self, dag, async, auto_exec):
         """
         1. create a temp submission directory
         2. create job scripts for submission

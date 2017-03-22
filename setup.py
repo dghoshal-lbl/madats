@@ -28,6 +28,6 @@ setup(name='MaDaTS',
                    'License :: OSI Approved :: BSD License'
       ],
       install_requires=install_deps,
-      #entry_points={'console_scripts': ['madats = madats:main']},
+      entry_points={'console_scripts': ['madats-copy = madats.utils.copy:main']},
       data_files=[('config',['config/config.ini'])]      
 )
