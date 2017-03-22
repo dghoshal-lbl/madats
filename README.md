@@ -21,12 +21,13 @@ create and manage a VDS, which is a data-centric way of representing
 the workflow and data. The current API supports Python. Below are the
 key functions in the API.
 
-    1 create a VDS
+    1. create a VDS
         madats.create() -> VDS  
 
-    2. map a workflow into VDS or add virtual data objects to VDS  
+    2. add virtual objects to VDS 
+    2.1. map a workflow into VDS
         madats.map(VDS, workflow[, data_properties])  
-    
+    2.2. create a data-centric workflow in VDS
 	madats.vds.VirtualDataObject(data_object) -> VirtualDataObject  
     	madats.vds.Task() > Task  
     	VirtualDataObject.add_consumer(Task)  
@@ -49,22 +50,21 @@ Dependencies
 Install
 --------
 1. Using Anaconda python  
-
-   conda create -n <env> python   
-   source activate <env>  
+    conda create -n <env> python   
+    source activate <env>  
+    python setup.py install
 
 2. Using virtualenv  
-   virtualenv <venv>  
-   source <venv>/bin/activate  
-  
-   python setup.py install  
+    virtualenv <venv>  
+    source <venv>/bin/activate    
+    python setup.py install  
 
 Usage
 --------
 1. Using the MaDaTS API
    - compose a data-centric workflow using MaDaTS API    
-     -- create a VDS   [madats.create()]  
-     -- add VDOs to a VDS  [vds.add(vdo)]  
+     -- create a VDS [madats.create()]  
+     -- add VDOs to a VDS [vds.add(vdo)]  
      -- add producers and consumers to VDOs [vdo.add_producers(task)/consumers(task)]  
      -- plan the data management strategies [madats.plan(vds, policy)]  
      -- manage the data and execute the workflow [madats.manage(vds)]  
