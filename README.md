@@ -39,7 +39,10 @@ key functions in the API.
     4. manage data and workflow  
        madats.manage(VDS[, async, scheduler, auto_exec])  
 
-    5. destroy the VDS  
+    5. query the VDS
+       madats.query(VDS, query)
+
+    6. destroy the VDS  
        madats.destroy(VDS)  
 
 Dependencies
