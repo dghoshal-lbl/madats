@@ -1,7 +1,7 @@
 MaDaTS: Managing Data on Tiered Storage for Scientific Workflows
 ----------------------------------------------------------------
 
--![MaDaTS Architecture](docs/figs/madats.pdf)
+-![MaDaTS Architecture](docs/figs/madats.png)
 
 MaDaTS provides an integrated data management and workflow execution
 framework. It provides high-level data abstractions through a virtual
@@ -21,26 +21,26 @@ create and manage a VDS, which is a data-centric way of representing
 the workflow and data. The current API supports Python. Below are the
 key functions in the API.
 
-    # create a VDS
-    1. madats.create() -> VDS
+    1 create a VDS
+    madats.create() -> VDS
 
-    # map a workflow into VDS or add virtual data objects to VDS
-    2.1. madats.map(VDS, workflow[, data_properties])
+    2. map a workflow into VDS or add virtual data objects to VDS
+    madats.map(VDS, workflow[, data_properties])  
+    
+    madats.vds.VirtualDataObject(data_object) -> VirtualDataObject  
+    madats.vds.Task() > Task  
+    VirtualDataObject.add_consumer(Task)  
+    VirtualDataObject.add_producer(Task)  
+    VDS.add(VirtualDataObject)  
 
-    2.2. madats.vds.VirtualDataObject(data_object) -> VirtualDataObject
-    	 madats.vds.Task() > Task
-	 VirtualDataObject.add_consumer(Task)
-	 VirtualDataObject.add_producer(Task)
-	 VDS.add(VirtualDataObject)
+    3. define data management policy and extend workflow
+    madats.plan(VDS, policy)
 
-    # define data management policy and extend workflow
-    2.3. madats.plan(VDS, policy)
+    4. manage data and workflow
+    madats.manage(VDS[, async, scheduler, auto_exec])
 
-    # manage data and workflow
-    2.4. madats.manage(VDS[, async, scheduler, auto_exec])
-
-    # destroy the VDS
-    2.5. madats.destroy(VDS)
+    5. destroy the VDS
+    madats.destroy(VDS)
 
 Dependencies
 ---------------
@@ -50,30 +50,30 @@ Install
 --------
 1. Using Anaconda python
 
-   conda create -n <env> python
+   conda create -n <env> python  
    source activate <env>
 
 2. Using virtualenv 
-   virtualenv <venv>
-   source <venv>/bin/activate
-
+   virtualenv <venv>  
+   source <venv>/bin/activate  
+  
    python setup.py install
 
 Usage
 --------
 1. Using the MaDaTS API
-   - compose a data-centric workflow using MaDaTS API
-     -- create a VDS   [madats.create()]
-     -- add VDOs to a VDS  [vds.add(vdo)]
-     -- add producers and consumers to VDOs [vdo.add_producers(task)/consumers(task)]
-     -- plan the data management strategies [madats.plan(vds, policy)]
-     -- manage the data and execute the workflow [madats.manage(vds)]
-     -- destroy the workflow [madats.destroy(vds)]
+   - compose a data-centric workflow using MaDaTS API    
+     -- create a VDS   [madats.create()]  
+     -- add VDOs to a VDS  [vds.add(vdo)]  
+     -- add producers and consumers to VDOs [vdo.add_producers(task)/consumers(task)]  
+     -- plan the data management strategies [madats.plan(vds, policy)]  
+     -- manage the data and execute the workflow [madats.manage(vds)]  
+     -- destroy the workflow [madats.destroy(vds)]  
 
-2. Using a workflow description
-   - provide a description of the workflow [madats.map(vds, workflow)]
-   - select the appropriate data management strategy [madats.plan(vds, policy)]
-   - generate and execute batch scripts [madats.manage(vds, scheduler)]
+2. Using a workflow description  
+   - provide a description of the workflow [madats.map(vds, workflow)]  
+   - select the appropriate data management strategy [madats.plan(vds, policy)]  
+   - generate and execute batch scripts [madats.manage(vds, scheduler)]  
 
 Test
 --------
@@ -92,35 +92,35 @@ name is MadatsStorage(AbstractStorage).
 
 Currently, MaDaTS uses 6 different plugins.
 
-1. Workflow: provides an abstraction for the workflow
-   Module Directory: plugins/workflow
-   Extends: AbstractWorkflow 
-   Abstract Functions: parse()
+1. Workflow: provides an abstraction for the workflow  
+   Module Directory: plugins/workflow  
+   Extends: AbstractWorkflow  
+   Abstract Functions: parse()  
 
-2. Data-manager: provides an abstraction for data management policies
-   Module Directory: plugins/datamgr
-   Extends: AbstractDatamgr
-   Abstract Functions: policy_engine()
+2. Data-manager: provides an abstraction for data management policies  
+   Module Directory: plugins/datamgr  
+   Extends: AbstractDatamgr  
+   Abstract Functions: policy_engine()  
 
-3. Storage: provides an abstraction for storage interfaces
-   Module Directory: plugins/storage
-   Extends: AbstractStorage
-   Abstract Functions: get_hierarchy(), get_id_path(), get_storage_path(), get_storage_id()
+3. Storage: provides an abstraction for storage interfaces  
+   Module Directory: plugins/storage  
+   Extends: AbstractStorage  
+   Abstract Functions: get_hierarchy(), get_id_path(), get_storage_path(), get_storage_id()  
 
-4. Execution: provides an abstraction for workflow execution engines
-   Module Directory: plugins/execution
-   Extends: AbstractExecution
-   Abstract Functions: execute(), wait(), status()
+4. Execution: provides an abstraction for workflow execution engines  
+   Module Directory: plugins/execution  
+   Extends: AbstractExecution  
+   Abstract Functions: execute(), wait(), status()  
 
-5. Copy: provides an abstraction for copying/moving/transferring data
-   Module Directory: plugins/copy
-   Extends: AbstractCopy
-   Abstract Functions: copy(), poll()
+5. Copy: provides an abstraction for copying/moving/transferring data  
+   Module Directory: plugins/copy  
+   Extends: AbstractCopy  
+   Abstract Functions: copy(), poll()  
 
-6. Scheduling: provides an abstraction for job schedulers and job management
-   Module Directory: plugins/scheduling
-   Extends: AbstractScheduling
-   Abstract Functions: set(), submit(), wait(), status()
+6. Scheduling: provides an abstraction for job schedulers and job management  
+   Module Directory: plugins/scheduling  
+   Extends: AbstractScheduling  
+   Abstract Functions: set(), submit(), wait(), status()  
 
 
 
