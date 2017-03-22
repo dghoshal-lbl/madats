@@ -24,11 +24,10 @@ key functions in the API.
     1. create a VDS
         madats.create() -> VDS  
 
-    2. add virtual objects to VDS 
-    2.1. map a workflow into VDS
+    2. map a workflow into VDS or create a data-centric workflow in VDS 
         madats.map(VDS, workflow[, data_properties])  
-    2.2. create a data-centric workflow in VDS
-	madats.vds.VirtualDataObject(data_object) -> VirtualDataObject  
+
+		madats.vds.VirtualDataObject(data_object) -> VirtualDataObject  
     	madats.vds.Task() > Task  
     	VirtualDataObject.add_consumer(Task)  
     	VirtualDataObject.add_producer(Task)  
@@ -50,14 +49,14 @@ Dependencies
 Install
 --------
 1. Using Anaconda python  
-    conda create -n <env> python   
-    source activate <env>  
-    python setup.py install
+   	 conda create -n <env> python   
+	 source activate <env>  
+	 python setup.py install
 
 2. Using virtualenv  
-    virtualenv <venv>  
-    source <venv>/bin/activate    
-    python setup.py install  
+    	 virtualenv <venv>  
+    	 source <venv>/bin/activate    
+    	 python setup.py install  
 
 Usage
 --------
