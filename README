@@ -22,10 +22,10 @@ the workflow and data. The current API supports Python. Below are the
 key functions in the API.
 
     1 create a VDS
-        madats.create() -> VDS
+        madats.create() -> VDS  
 
-    2. map a workflow into VDS or add virtual data objects to VDS
-       madats.map(VDS, workflow[, data_properties])  
+    2. map a workflow into VDS or add virtual data objects to VDS  
+        madats.map(VDS, workflow[, data_properties])  
     
 	madats.vds.VirtualDataObject(data_object) -> VirtualDataObject  
     	madats.vds.Task() > Task  
@@ -33,14 +33,14 @@ key functions in the API.
     	VirtualDataObject.add_producer(Task)  
     	VDS.add(VirtualDataObject)  
 
-    3. define data management policy and extend workflow
-       madats.plan(VDS, policy)
+    3. define data management policy and extend workflow  
+       madats.plan(VDS, policy)  
 
-    4. manage data and workflow
-       madats.manage(VDS[, async, scheduler, auto_exec])
+    4. manage data and workflow  
+       madats.manage(VDS[, async, scheduler, auto_exec])  
 
-    5. destroy the VDS
-       madats.destroy(VDS)
+    5. destroy the VDS  
+       madats.destroy(VDS)  
 
 Dependencies
 ---------------
@@ -48,16 +48,16 @@ Dependencies
 
 Install
 --------
-1. Using Anaconda python
+1. Using Anaconda python  
 
-   conda create -n <env> python  
-   source activate <env>
+   conda create -n <env> python   
+   source activate <env>  
 
-2. Using virtualenv 
+2. Using virtualenv  
    virtualenv <venv>  
    source <venv>/bin/activate  
   
-   python setup.py install
+   python setup.py install  
 
 Usage
 --------
