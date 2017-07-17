@@ -36,6 +36,7 @@ class Task():
         self.cpus = 0
         self.queue = ''
         self.account = ''
+        self.priority = -1
         self.predecessors = []
         self.successors = []
         self.bin = 0

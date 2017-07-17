@@ -1,4 +1,5 @@
 from abstractions.system_interfaces import AbstractCopy
+from utils import helper
 import os
 
 class MadatsCopy(AbstractCopy):
@@ -29,7 +30,6 @@ class MadatsCopy(AbstractCopy):
         if vdo_src.storage_id == 'archive':
             dest_dir = os.path.dirname(vdo_dest.abspath)
             command = 'mkdir -p {}; cd {}; hsi -q "prompt; mget {}"'.format(dest_dir, vdo_dest.abspath, vdo_src.abspath)
-            self.run(command)
         elif vdo_dest.storage_id == 'archive':
             src_dir = os.path.dirname(vdo_src.abspath)
             dest_dir = os.path.dirname(vdo_dest.abspath)       
@@ -37,8 +37,7 @@ class MadatsCopy(AbstractCopy):
             command = 'cd {}; hsi -q "prompt; mkdir -p {}; cd {}; mput {}"'.format(src_dir, dest_dir, dest_dir, filename)
         else:
             command = 'cp ' + vdo_src.abspath + ' ' + vdo_dest.abspath
-
-        self.run(command)
+        helper.run(command)
 
 
     def poll(self, id, **kwargs):

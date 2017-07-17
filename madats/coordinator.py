@@ -105,7 +105,8 @@ def plan(vds, policy, **kwargs):
 '''
 manage VDS by managing data and executing workflow
 '''
-def manage(vds, async=False, scheduler=None, auto_exec=True, **kwargs):
+#def manage(vds, async=False, scheduler=None, auto_exec=True, **kwargs):
+def manage(vds, scheduler=None, **kwargs):
     dag = {}
     vdo_list = vds.get_vdo_list()
     #plugins = Plugins()
@@ -127,20 +128,28 @@ def manage(vds, async=False, scheduler=None, auto_exec=True, **kwargs):
         #scheduling_plugin = plugins.scheduling_plugin
         scheduling_plugin = plugin_loader.load_scheduling_plugin()
         scheduling_plugin.set(scheduler, **kwargs)
+        # generate job scripts and submit them through the scheduler
+        status = scheduling_plugin.submit(dag)
+        '''
         submit_ids = scheduling_plugin.submit(dag, async, auto_exec)
         if auto_exec == True:
             # if async is true that means all jobs are submitted together with dependencies
             if async == True:
                 scheduling_plugin.wait(submit_ids)
             status = scheduling_plugin.status(submit_ids)
+        '''
     else:
         #execution_plugin = plugins.execution_plugin
         execution_plugin = plugin_loader.load_execution_plugin()
+        # execute the workflow from within a batch script
+        status = execution_plugin.execute(dag, **kwargs)
+        '''
         exec_id = execution_plugin.execute(dag, async, auto_exec, **kwargs)
         if auto_exec == True:
             if async == True:
                 execution_plugin.wait(exec_id)
             status = execution_plugin.status(exec_id)
+        '''
     return status
      
 

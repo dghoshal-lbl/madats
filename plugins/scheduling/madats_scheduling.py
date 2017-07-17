@@ -1,5 +1,5 @@
 from abstractions.system_interfaces import AbstractScheduling
-from utils import dagman
+from utils import dagman, helper
 from madats.vds import Task
 import uuid
 import os
@@ -158,34 +158,13 @@ class MadatsScheduling(AbstractScheduling):
         return wrapper_script 
                 
 
-    def submit(self, dag, async, auto_exec):
+    def submit(self, dag):
         tasks = dagman.batch_execution_order(dag)
         submit_dir, submit_scripts = self.__gen_jobscript__(tasks)
-        wrapper_script = self.__gen_wrapper__(submit_dir, submit_scripts, tasks, dag)        
-        
-        submit_ids = []        
-        if auto_exec == True:
-            '''
-            # if asynchronous mode is ON, then wrap the job submission scripts and submit the wrapper
-            if async == True:
-                for submit_script in submit_scripts:
-                    submit_cmd = 'bash -c ' + submit_script
-                    submit_id = self.__run__(submit_cmd)
-                    submit_ids.append(submit_id)
-            # else generate a single workflow execution script and submit it through a batch script
-            else:
-                for submit_script in submit_scripts:
-                    submit_cmd = self.__submit_cmd__ + ' ' + submit_script
-                    submit_id = self.__run__(submit_cmd)
-                    submit_ids.append(submit_id)
-            '''
-            submit_cmd = 'bash -c ' + wrapper_script
-            submit_ids = self.__run__(submit_cmd)
-        else:
-            print('Auto-execution set to {}. Generated scripts for execution!'.format(auto_exec))
-            submit_ids.append(0)
-
-        return submit_ids
+        wrapper_script = self.__gen_wrapper__(submit_dir, submit_scripts, tasks, dag)
+        submit_cmd = 'bash -c ' + wrapper_script
+        status = helper.run(submit_cmd)
+        return status
 
 
     # TODO: implementation

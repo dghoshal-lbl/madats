@@ -18,8 +18,8 @@ class MadatsDatamgr(AbstractDatamgr):
     def __madats_sta__(self, vds):
         # TODO implementation
         return 0
-
             
+
     def __default__(self, vds):
         vdos = vds.get_vdo_list()
         for vdo in vdos:
@@ -27,3 +27,13 @@ class MadatsDatamgr(AbstractDatamgr):
             self.replace_vdo(vds, vdo, new_vdo)
         return 0
             
+
+    # optimal madats: new data management strategy
+    '''
+    - combine (viable) data movements together into a single data task
+    - priority-based data movment: data on which most tasks depend are moved first
+    - use specific data movement plugins: data transfer nodes, datawarp API
+    '''
+    def __madats_opt__(self, vds):
+        vdos = vds.get_vdo_list()
+        

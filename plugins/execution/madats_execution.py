@@ -4,6 +4,8 @@ from madats.vds import Task, DataTask
 from plugins import plugin_loader
 import time
 from utils import dagman
+import calendar
+from utils import helper
 
 class MadatsExecution(AbstractExecution):
     WAIT_TIME = 5
@@ -14,50 +16,42 @@ class MadatsExecution(AbstractExecution):
     def status(self, exec_id):
         return 0
 
-    def execute(self, dag, async, auto_exec, **kwargs):        
-        if auto_exec == True:
-            if 'execution' in kwargs:
-                execution = kwargs['execution']
-            else:
-                execution = 'EXECUTION_LOCAL_THREAD'
-            execution_name = {
-                'EXECUTION_LOCAL_THREAD': "thread",
-                'EXECUTION_LOCAL_PROCESS': "process",
-                'EXECUTION_DISTRIBUTE_PROCESS': "distribute",
-                'EXECUTION_SGE': 'sge'
-                }[execution]
-            execution_plugin = tigres.utils.Execution.get(execution)        
-
-            task_bins = dagman.bin_execution_order(dag)
-
-            tigres.start(name="TigresWF-{}".format(execution_name),
-                         log_dest="TigresWF-{}.log".format(execution_name),
-                         execution=execution_plugin)
-            
-            for tasks in task_bins:
-                if len(tasks) == 1:
-                    self.__execute_single__(tasks[0])
-                else:
-                    self.__execute_parallel__(tasks)
-        
-            tigres.end()
+    def execute(self, dag, **kwargs):        
+        if 'execution' in kwargs:
+            execution = kwargs['execution']
         else:
-            print('Auto-execution set to {}. Showing execution DAG!'.format(auto_exec))
-            print('--------------------------------------')
-            for k in dag:
-                task = k.command
-                children = [c.command for c in dag[k]]
-                print("{}(T:{})[{}]: {}".format(task, k.type, k.params, children))
-            print('--------------------------------------')
+            execution = 'EXECUTION_LOCAL_THREAD'
+        execution_name = {
+            'EXECUTION_LOCAL_THREAD': "thread",
+            'EXECUTION_LOCAL_PROCESS': "process",
+            'EXECUTION_DISTRIBUTE_PROCESS': "distribute",
+            'EXECUTION_SGE': 'sge'
+            }[execution]
+        execution_plugin = tigres.utils.Execution.get(execution)        
+        
+        task_bins = dagman.bin_execution_order(dag)
+        ttime = calendar.timegm(time.gmtime())
+        wf_name = "TigresWF-{}-{}".format(ttime, execution_name)
+        tigres.start(name="{}".format(wf_name),
+                     log_dest="{}.log".format(wf_name),
+                     execution=execution_plugin)
+        
+        for tasks in task_bins:
+            if len(tasks) == 1:
+                self.__execute_single__(tasks[0])
+            else:
+                self.__execute_parallel__(tasks)
+        
+        tigres.end()
 
-
+    '''
     def __manage_data_tasks__(self, data_task):        
         print('Waiting for data-task {}'.format(data_task.__id__))
         #print("{} {}".format(data_task.command, data_task.params))
         copy_plugin = plugin_loader.load_copy_plugin()
         copy_plugin.copy(data_task.vdo_src, data_task.vdo_dest)
         print('Data-task {} completed'.format(data_task.__id__))
-
+    '''
 
     def __execute_single__(self, task):
         task_array = tigres.TaskArray('Single Task')
@@ -65,14 +59,6 @@ class MadatsExecution(AbstractExecution):
 
         task_id = str(task.__id__)
 
-        '''
-        # data tasks will be handled by the storage system and hence, only monitor them
-        if task.type == Task.DATA:
-            ttask = tigres.Task("{}".format(task.__id__), tigres.FUNCTION, impl_name=self.__manage_data_tasks__, input_types=[DataTask])
-            task_array.append(ttask)
-            input_array.append([task])
-        else:
-        '''
         params = []
         if task.params != None:
             params = task.params
@@ -83,7 +69,7 @@ class MadatsExecution(AbstractExecution):
         return_code = 0
         try:
             output = tigres.sequence('single_task', task_array, input_array)
-            print(output)
+            helper.pretty_print(output)
         except tigres.utils.TigresException as e:
             return_code = 1
 
@@ -114,6 +100,8 @@ class MadatsExecution(AbstractExecution):
                 input_array.append([task])
             else:
             '''
+            # no need to differentiate between compute and data tasks any more
+            # data tasks are abstracted now through madats-copy
             params = []
             if task.params != None:
                 params = task.params
@@ -124,7 +112,7 @@ class MadatsExecution(AbstractExecution):
         return_code = 0
         try:
             output = tigres.parallel('parallel_task', task_array, input_array)
-            print(output)
+            helper.pretty_print(output)
         except tigres.utils.TigresException as e:
             return_code = 1
 
