@@ -1,0 +1,25 @@
+system: nersc
+
+nersc:
+  burst: 
+    mount: /burst/buffer
+    persist: None
+    interface: posix
+    bandwidth: 1600
+  scratch:
+    mount: /scratch/scratchdirs/cscratch1
+    persist: ShortTerm
+    interface: posix
+    bandwidth: 700
+  project:
+    mount: /project/projectdirs/test
+    persist: LongTerm
+    interface: posix
+    bandwidth: 40
+  archive:
+    mount: /home/d/dghoshal
+    persist: LongTerm
+    interface: hsi
+    bandwidth: 1
+      
+
