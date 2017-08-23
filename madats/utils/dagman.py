@@ -77,6 +77,11 @@ def bin_execution_order(dag):
     # PASS-2: re-adjust task bins for just-in-time execution
     for task in dag:
         __readjust_bins__(dag, task, max_bins, bins_dict)
+        print('{}: {}'.format(task.bin, task.params))
+
+    #for k, v in bins_dict.items():
+    #    plist = [p.params for p in v]
+    #    print('{}: {}'.format(k, plist))
 
     for i in range(len(bins_dict)):
         task_bins.append(bins_dict[i])

@@ -24,6 +24,30 @@ class TaskType(object):
     COMPUTE = 0
     DATA = 1
 
+class ExecutionMode(object):
+    """
+    Workflow execution modes supported in MaDaTS
+    """
+
+    DAG = 0
+    BIN = 1
+    PRIORITY = 2
+    DEPENDENCY = 3
+
+    type_dict = {'dag': DAG, 'bin': BIN,
+                 'priority': PRIORITY, 'dependency': DEPENDENCY}
+
+    name_dict = {DAG: 'dag', BIN: 'bin',
+                 PRIORITY: 'priority', DEPENDENCY: 'dependency'}
+
+    @staticmethod
+    def type(name):
+        return ExecutionMode.type_dict.get(name, ExecutionMode.DAG)
+
+    @staticmethod
+    def name(type):
+        return ExecutionMode.name_dict.get(type, None)
+
 
 class Persistence(object):
     """
@@ -57,7 +81,7 @@ class Policy(object):
     STORAGE_AWARE = 2
 
     policy_name = {NONE: 'NONE', WORKFLOW_AWARE: 'WORKFLOW_AWARE',
-                   STORAGE_AWARE: 'STORAGE_AWARE', USER_DRIVEN: 'USER_DRIVEN'}
+                   STORAGE_AWARE: 'STORAGE_AWARE'}
 
     @staticmethod
     def name(policy):

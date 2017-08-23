@@ -108,6 +108,14 @@ class Task(object):
         self._scheduler = scheduler
 
     @property
+    def bin(self):
+        return self._bin
+
+    @bin.setter
+    def bin(self, bin):
+        self._bin = bin
+
+    @property
     def prerun(self):
         return self._prerun
 

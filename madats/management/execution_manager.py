@@ -17,12 +17,14 @@ from madats.core.task import Task
 import time
 import os
 import threading
+import multiprocessing
 try:
     import Queue as queue
 except:
     import queue
 import subprocess
 import uuid
+from madats.utils.constants import ExecutionMode
 
 result_list = []
 taskmap = {}
@@ -106,12 +108,38 @@ def monitor(job_id, scheduler):
     
 
 """
+generates the submission and execution script for a task
+"""
+def generate_script(task):
+    command = task.command
+    param_list = [str(p) for p in task.params]
+    params = " ".join(param_list)    
+    script_name = task.__id__ + '.sub'
+    script = os.path.join(_script_dir, script_name)
+    with open(script, 'w') as f:        
+        f.write("#!/bin/bash\n")
+        if task.scheduler != Scheduler.NONE:
+            for opt in task.scheduler_opts:
+                directive = Scheduler.get_directive(task.scheduler, opt)
+                if directive != None:
+                    value = str(task.scheduler_opts[opt])
+                    directive_stmt = directive + '=' + value + '\n'
+                    f.write(directive_stmt)
+        f.write(command + ' ' + params + '\n')
+
+    os.chmod(script, 0o744)
+    
+    #return os.path.abspath(script)
+    return script
+
+
+"""
 Execute a workflow DAG: generate individual task scripts and then run
 - every task can be in one of the three states: WAIT, RUN, COMPLETE
 - when all the predecessors of a task have finished, it goes from WAIT to RUN
 - a task waits on the state to be changed
 """
-def execute(dag, **kwargs):
+def dag_execution(dag):
     global _script_dir
     _script_dir = os.path.join(outdir, _workflow_id)
     if not os.path.exists(_script_dir):
@@ -139,30 +167,86 @@ def execute(dag, **kwargs):
 
 
 """
-generates the submission and execution script for a task
+execute a single task of the workflow
 """
-def generate_script(task):
-    command = task.command
-    param_list = [str(p) for p in task.params]
-    params = " ".join(param_list)    
-    script_name = task.__id__ + '.sub'
-    script = os.path.join(_script_dir, script_name)
-    with open(script, 'w') as f:        
-        f.write("#!/bin/bash\n")
-        if task.scheduler != Scheduler.NONE:
-            for opt in task.scheduler_opts:
-                directive = Scheduler.get_directive(task.scheduler, opt)
-                if directive != None:
-                    value = str(task.scheduler_opts[opt])
-                    directive_stmt = directive + '=' + value + '\n'
-                    f.write(directive_stmt)
-        f.write(command + ' ' + params + '\n')
+def execute_task(task):
+    job_script = generate_script(task)
+    '''
+    submit the task
+    '''
+    print("[Workflow-{}] Submitted task-{}".format(_workflow_id, task.__id__))
+    result = submit(job_script, task.scheduler)
+    print("[Workflow-{}] Finished task-{}".format(_workflow_id, task.__id__))
+            
+    return result
 
-    os.chmod(script, 0o744)
+
+"""
+Execute a workflow DAG by combining independent tasks into 'Bins'
+"""
+def bin_execution(dag):
+    global _script_dir
+    _script_dir = os.path.join(outdir, _workflow_id)
+    if not os.path.exists(_script_dir):
+        os.makedirs(_script_dir)
+
+    print("[Workflow-{}] Getting tasks".format(_workflow_id))
+    task_bins = dagman.bin_execution_order(dag)
+    idx = 0
+    for bin in task_bins:
+        task_list = [t.params for t in bin]
+        print('{}: {}'.format(idx, task_list))
+        idx += 1
+        
+
+    result_list = []
+    print("[Workflow-{}] Executing tasks".format(_workflow_id))
+    for tasks in task_bins:
+        num_tasks = len(tasks)
+        pool = multiprocessing.Pool(processes=num_tasks)
+        job_args = []
+        for task in tasks:
+            job_script = generate_script(task)
+            scheduler = task.scheduler
+            job_args.append((job_script, scheduler))
+
+        results = [pool.apply_async(submit, args=job_arg) for job_arg in job_args]
+        for result in results:
+            result_list.append(result.get())
+            
+    print("[Workflow-{}] Finished execution".format(_workflow_id))
+    print("{}".format(result_list))
+
+
+"""
+Execute a workflow DAG by ordering task execution based on their priorities
+"""
+def priority_execution(dag):
+    pass
+
+
+"""
+Execute a workflow DAG by assigning high priority to tasks with large number of dependent jobs 
+"""
+def dependency_execution(dag):
+    pass
+
+
+"""
+abstracting the workflow manager execution modes
+"""
+def execute(dag, mode=ExecutionMode.DAG):
+    if mode == ExecutionMode.DAG:
+        dag_execution(dag)
+    elif mode == ExecutionMode.BIN:
+        bin_execution(dag)
+    elif mode == ExecutionMode.PRIORITY:
+        priority_execution(dag)
+    elif mode == ExecutionMode.DEPENDENCY:
+        dependency_execution(dag)
+    else:
+        print("Workflow execution mode ({}) not implemented!".format(mode))
     
-    #return os.path.abspath(script)
-    return script
-
 
 '''
 test main
@@ -201,6 +285,7 @@ if __name__ == '__main__':
     dag[task1] = [task2, task3]
     dag[task2] = [task4]
     dag[task3] = [task4]
+    dag[task4] = []
 
     execute(dag)
 
