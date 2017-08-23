@@ -25,6 +25,10 @@ class StorageHierarchy(object):
         for k,v in self._hierarchy.items():
             self._mount_points[v['mount']] = str(k)
 
+    @property
+    def hierarchy(self):
+        return self._hierarchy
+
     def parse(self, storage_config):
         with open(storage_config, 'r') as config:
             storage_yaml = yaml.load(config)
@@ -144,6 +148,19 @@ def get_data_mount_point(datapath):
         return None
     else:
         return path
+
+
+"""
+get storage tiers and associated storage properties
+"""
+def get_storage_tiers():
+    '''
+    tiers = []
+    for key in __storage_hierarchy__.hierarchy.keys():
+        tiers.append(key)
+    return tiers
+    '''
+    return __storage_hierarchy__.hierarchy
 
 
 if __name__ == '__main__':

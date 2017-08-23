@@ -144,16 +144,24 @@ class VirtualDataSpace():
     """
     def __init__(self):
         self.__vdo_dict__ = {}
-        self.vdos = []
-        self.tasks = []
+        self._vdos = []
+        self._tasks = []
         self._data_management_policy = Policy.NONE
     
+    @property
+    def vdos(self):
+        return self._vdos
+
+    @property
+    def tasks(self):
+        return self._tasks
+
     '''
     creates a Task in the VDS
     '''
     def create_task(self, command, type=Task.COMPUTE):
         task = Task(command, type)
-        self.tasks.append(task)
+        self._tasks.append(task)
         return task
 
     '''
@@ -161,7 +169,7 @@ class VirtualDataSpace():
     '''
     def create_vdo(self, datapath):
         vdo = VirtualDataObject(datapath)
-        self.vdos.append(vdo)
+        self._vdos.append(vdo)
         return vdo
 
     '''
@@ -186,7 +194,7 @@ class VirtualDataSpace():
     '''
     def delete(self, vdo):
         del self.__vdo_dict__[vdo.__id__]
-        self.vdos.remove(vdo.__id__)
+        self._vdos.remove(vdo.__id__)
 
     '''
     retrieve one
@@ -201,9 +209,11 @@ class VirtualDataSpace():
     '''
     retrieve all
     '''
+    '''
     def get_vdo_list(self):
         vdo_list = [self.__vdo_dict__[id] for id in self.__vdo_dict__]
         return vdo_list
+    '''
 
     '''
     search
