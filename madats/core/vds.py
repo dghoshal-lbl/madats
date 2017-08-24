@@ -187,7 +187,7 @@ class VirtualDataSpace():
             return self.datapaths[datapath]
 
         vdo = VirtualDataObject(datapath)
-        self._vdos.append(vdo)
+        self.vdos.append(vdo)
         self.datapaths[datapath] = vdo
         vdo_id = storage.get_data_id(datapath) 
         self.__vdo_dict__[vdo_id] = vdo
@@ -197,11 +197,11 @@ class VirtualDataSpace():
     copies a VDO to another VDO in the VDS
     '''
     def copy(self, vdo_src, dest_id):
-        relative_path = vdo_src.relative_path                
+        relative_path = vdo_src.relative_path
         dest_path = storage.build_data_path(dest_id, relative_path)
         vdo_id = storage.get_data_id(dest_path)
         if self.vdo_exists(vdo_id):
-            return self.__vdo_dict__[vdo_id]
+             return self.__vdo_dict__[vdo_id]
 
         vdo = self.create_vdo(dest_path)
         vdo_src.copy_to.append(vdo)

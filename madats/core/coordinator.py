@@ -63,7 +63,6 @@ def map(workflow, language='yaml'):
         conss = [cons.params for cons in vdo.consumers]
         print("{} {} {}".format(vdo.abspath, prods, conss))
     '''
-
     return vds
 
 
@@ -88,8 +87,7 @@ manage VDS by managing data and executing workflow
 """
 def manage(vds, execute_mode=ExecutionMode.DAG):
     dag = {}
-    vdo_list = vds.vdos
-    for vdo in vdo_list:
+    for vdo in vds.vdos:
         for prod in vdo.producers:
             if prod not in dag:
                 dag[prod] = []

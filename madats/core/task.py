@@ -26,7 +26,7 @@ class Task(object):
 
     def __init__(self, command, type=TaskType.COMPUTE):
         self.__id__  = str(uuid.uuid4())
-        self._name = ''
+        self._name = self.__id__
         self._command = command
         self._inputs = []
         self._outputs = []
@@ -159,15 +159,20 @@ class DataTask(Task):
         Task.__init__(self, command='', type=TaskType.DATA)        
         self.vdo_src = vdo_src
         self.vdo_dest = vdo_dest
+        self.inputs = [vdo_src]
+        self.outputs = [vdo_dest]
         self.add_param(vdo_src.abspath)
         self.add_param(vdo_dest.abspath)
         self.command = self.__set_data_mover__(vdo_src, vdo_dest)
+
 
     def __set_data_mover__(self, vdo_src, vdo_dest):
         # the default data mover is 'cp', however, it
         # changes based on the source and destination
         # storage/file systems
-        command = 'cp'
+        data_directory = os.path.dirname(vdo_dest.abspath)
+        command = 'mkdir -p {}\n'.format(data_directory)
+        command = command + 'cp -R'
 
         # TODO: add flexible data mover; can take it as an arg as well from the calling function
 

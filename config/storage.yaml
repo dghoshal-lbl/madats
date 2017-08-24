@@ -2,7 +2,7 @@ system: nersc
 
 nersc:
   burst: 
-    mount: /burst/buffer
+    mount: /Users/DGhoshal/workdir/uda/css/mountpts/burst
     persist: None
     interface: posix
     bandwidth: 1600
@@ -16,6 +16,11 @@ nersc:
     persist: LongTerm
     interface: posix
     bandwidth: 40
+  home: 
+    mount: /Users/DGhoshal
+    persist: ShortTerm
+    interface: posix
+    bandwidth: 10
   archive:
     mount: /home/d/dghoshal
     persist: LongTerm

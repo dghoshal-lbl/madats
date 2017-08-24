@@ -32,7 +32,7 @@ def create_data_task(vds, vdo_src, vdo_dest, **kwargs):
         else:
             src = vdo_src.storage_id + vdo_src.relative_path 
             dest = vdo_dest.storage_id + vdo_dest.relative_path 
-            print('Data task ({} -> {}) created'.format(src_data, dest_data))
+            print('Data stage-in task ({} -> {}) created'.format(src_data, dest_data))
 
         """
         update the I/O parameters if data is moved
@@ -68,7 +68,7 @@ def create_data_task(vds, vdo_src, vdo_dest, **kwargs):
         else:
             src = vdo_src.storage_id + vdo_src.relative_path 
             dest = vdo_dest.storage_id + vdo_dest.relative_path 
-            print('Data task ({} -> {}) created'.format(src_data, dest_data))
+            print('Data stage-out task ({} -> {}) created'.format(src_data, dest_data))
                 
         """
         update the I/O paramters to use the moved data
@@ -135,10 +135,14 @@ between computation and data transfer steps.
 def dm_workflow_aware(vds):    
     fast_tier = get_selected_storage()
     '''
+    create a shallow copy of the VDO list, because new VDOs will be added to VDS now
+    '''
+    vdos = [v for v in vds.vdos]
+    '''
     if a VDO's consumer has predecessors, or if a VDO's producer has successors,
     then the VDO can be moved and used from another storage tier
     '''
-    for vdo in vds.vdos:
+    for vdo in vdos:
         # if it's an input: create data task for staging data in
         if len(vdo.producers) == 0 and len(vdo.consumers) > 0:
             for task in vdo.consumers:
@@ -165,12 +169,15 @@ storage-aware data management: data is moved/kept in the fast tier for all input
 def dm_storage_aware(vds):
     fast_tier = get_selected_storage()
     '''
-    create a data task for each data object in VDS
+    create a shallow copy of the VDO list, because new VDOs will be added to VDS now
     '''
-    for vdo in vds.vdos:
+    vdos = [v for v in vds.vdos]
+    for vdo in vdos:
         new_vdo = vds.copy(vdo, fast_tier)
+        '''
+        create a data task for each data object in VDS
+        '''
         create_data_task(vds, vdo, new_vdo)
-
 
 '''
 def plan(vds):
