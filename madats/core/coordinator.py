@@ -92,7 +92,11 @@ def manage(vds, execute_mode=ExecutionMode.DAG):
             if prod not in dag:
                 dag[prod] = []
             for cons in vdo.consumers:
-                if cons not in dag[prod]:
+                '''
+                - add the dependencies for each task
+                - avoid self-dependencies to avoid deadloack  
+                '''
+                if cons not in dag[prod] and cons != prod:
                     dag[prod].append(cons)
                     cons.add_predecessor(prod)
                     prod.add_successor(cons)
@@ -101,11 +105,11 @@ def manage(vds, execute_mode=ExecutionMode.DAG):
             if con not in dag:
                 dag[con] = []
     
-    '''
+                
     print("**************")
     workflow_manager.display(dag)
     print("**************")
-    '''
+
     execution_manager.execute(dag, execute_mode) 
 
 

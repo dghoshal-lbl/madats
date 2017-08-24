@@ -13,7 +13,7 @@
 
 from madats.utils.constants import Policy
 from madats.core import storage
-from madats.core.task import DataTask
+from madats.core.vds import DataTask
 
 __data_tasks__ = {}
 
@@ -38,15 +38,15 @@ def create_data_task(vds, vdo_src, vdo_dest, **kwargs):
         update the I/O parameters if data is moved
         """
         for task in vdo_dest.consumers:
-            params = task.params
+            params = task.inputs
             for i in range(len(params)):
-                if task.params[i] == src_data:
-                    task.params[i] = dest_data
+                if task.inputs[i] == vdo_src:
+                    task.inputs[i] = vdo_dest
         for task in vdo_dest.producers:
-            params = task.params
+            params = task.inputs
             for i in range(len(params)):
-                if task.params[i] == src_data:
-                    task.params[i] = dest_data
+                if task.inputs[i] == vdo_src:
+                    task.inputs[i] = vdo_dest
 
         data_task = DataTask(vdo_src, vdo_dest, **kwargs)
         __data_tasks__[dt] = data_task
@@ -74,15 +74,15 @@ def create_data_task(vds, vdo_src, vdo_dest, **kwargs):
         update the I/O paramters to use the moved data
         """
         for task in vdo_src.consumers:
-            params = task.params
+            params = task.inputs
             for i in range(len(params)):
-                if task.params[i] == src_data:
-                    task.params[i] = dest_data
+                if task.inputs[i] == vdo_src:
+                    task.inputs[i] = vdo_dest
         for task in vdo_src.producers:
-            params = task.params
+            params = task.inputs
             for i in range(len(params)):
-                if task.params[i] == src_data:
-                    task.params[i] = dest_data
+                if task.inputs[i] == vdo_src:
+                    task.inputs[i] = vdo_dest
 
         """
         create a data task and add it to the respective VDOs
@@ -96,15 +96,15 @@ def create_data_task(vds, vdo_src, vdo_dest, **kwargs):
     # for non-persistent intermediate data
     else:
         for task in vdo_dest.consumers:
-            params = task.params
+            params = task.inputs
             for i in range(len(params)):
-                if task.params[i] == src_data:
-                    task.params[i] = dest_data            
+                if task.inputs[i] == vdo_src:
+                    task.inputs[i] = vdo_dest            
         for task in vdo_dest.producers:
-            params = task.params
+            params = task.inputs
             for i in range(len(params)):
-                if task.params[i] == src_data:
-                    task.params[i] = dest_data            
+                if task.inputs[i] == vdo_src:
+                    task.inputs[i] = vdo_dest            
         vds.delete(vdo_src)
 
 

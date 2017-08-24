@@ -13,7 +13,7 @@
 
 from madats.utils import dagman
 from madats.core.scheduler import Scheduler
-from madats.core.task import Task
+from madats.core.vds import VirtualDataObject, Task
 import time
 import os
 import threading
@@ -112,7 +112,14 @@ generates the submission and execution script for a task
 """
 def generate_script(task):
     command = task.command
-    param_list = [str(p) for p in task.params]
+    #param_list = [str(p) for p in task.params]
+    param_list = []
+    for input in task.inputs:
+        if isinstance(input, VirtualDataObject):
+            param_list.append(input.abspath)
+        else:
+            param_list.append(input)
+
     params = " ".join(param_list)    
     script_name = task.__id__ + '.sub'
     script = os.path.join(_script_dir, script_name)

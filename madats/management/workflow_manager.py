@@ -12,7 +12,7 @@
 """
 
 import yaml
-from madats.core.task import Task
+from madats.core.vds import Task
 from madats.core.scheduler import Scheduler
 from madats.management import execution_manager
 import sys
