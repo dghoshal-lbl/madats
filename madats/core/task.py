@@ -17,6 +17,7 @@ import hashlib
 import uuid
 from madats.utils.constants import TaskType, Persistence, Policy, UNKNOWN
 from madats.core.scheduler import Scheduler
+from madats.core.vds import VirtualDataObject
 
 ##########################################################################
 class Task(object):
@@ -30,7 +31,6 @@ class Task(object):
         self._command = command
         self._inputs = []
         self._outputs = []
-        self._params = []
         self._expected_runtime = UNKNOWN
         self._priority = UNKNOWN
         self.predecessors = []
@@ -65,6 +65,9 @@ class Task(object):
     @inputs.setter
     def inputs(self, inputs):
         self._inputs = inputs
+        for input in inputs:
+            if isinstance(input, VirtualDataObject):
+                input.add_consumer(self)
 
     @property
     def outputs(self):
@@ -73,19 +76,9 @@ class Task(object):
     @outputs.setter
     def outputs(self, outputs):
         self._outputs = outputs
-
-    @property
-    def params(self):
-        return self._params
-
-    @params.setter
-    def params(self, params):
-        self._params = []
-        for param in params:
-            self.add_param(param)
-
-    def add_param(self, param):
-        self._params.append(param)
+        for output in outputs:
+            if isinstance(output, VirtualDataObject):
+                output.add_producer(self)
 
     @property
     def runtime(self):
