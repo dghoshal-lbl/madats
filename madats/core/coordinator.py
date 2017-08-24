@@ -105,11 +105,11 @@ def manage(vds, execute_mode=ExecutionMode.DAG):
             if con not in dag:
                 dag[con] = []
     
-                
+    '''
     print("**************")
     workflow_manager.display(dag)
     print("**************")
-
+    '''
     execution_manager.execute(dag, execute_mode) 
 
 
