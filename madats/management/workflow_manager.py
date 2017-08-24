@@ -106,6 +106,22 @@ def display(dag):
         successors = " ".join(id_list)
         print("{} : {}".format(v.name, successors))
 
+    print("-------------------------")
+
+    for v in dag:
+        id_list = [p.name for p in v.predecessors]
+        preds = " ".join(id_list)
+        print("{} : {}".format(v.name, preds))
+
+    print("-------------------------")
+
+    for v in dag:
+        id_list = [p.name for p in v.successors]
+        preds = " ".join(id_list)
+        print("{} : {}".format(v.name, preds))
+
+
+
 
 """
 Translate a YAML workflow description into a generic workflow DAG

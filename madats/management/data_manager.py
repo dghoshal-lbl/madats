@@ -167,10 +167,13 @@ def dm_storage_aware(vds):
         create_data_task(vds, vdo, new_vdo)
 
 
-def plan(vds, policy):
+'''
+def plan(vds):
+    policy = vds.data_management_policy
     if policy == Policy.NONE:
         return
     elif policy == Policy.WORKFLOW_AWARE:
         dm_workflow_aware(vds)
     elif policy == Policy.STORAGE_AWARE:
         dm_storage_aware(vds)
+'''

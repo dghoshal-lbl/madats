@@ -18,6 +18,7 @@ import uuid
 from madats.utils.constants import TaskType, Persistence, Policy, UNKNOWN
 from madats.core.scheduler import Scheduler
 from madats.core import storage
+from madats.core.task import Task, DataTask
 
 class VirtualDataObject(object):
     """
@@ -128,6 +129,12 @@ class VirtualDataObject(object):
     def qos(self, **qos):
         self._qos = qos
 
+    def add_consumer(self, task):
+        self._consumers.append(task)
+
+    def add_producer(self, task):
+        self._producers.append(task)
+
 ######################################################################################
 class VirtualDataSpace():
     """
@@ -146,6 +153,7 @@ class VirtualDataSpace():
         self.__vdo_dict__ = {}
         self._vdos = []
         self._tasks = []
+        self.datapaths = {}
         self._data_management_policy = Policy.NONE
     
     @property
@@ -159,7 +167,7 @@ class VirtualDataSpace():
     '''
     creates a Task in the VDS
     '''
-    def create_task(self, command, type=Task.COMPUTE):
+    def create_task(self, command):
         task = Task(command, type)
         self._tasks.append(task)
         return task
@@ -168,8 +176,14 @@ class VirtualDataSpace():
     creates and adds a VDO in the VDS
     '''
     def create_vdo(self, datapath):
+        if datapath in self.datapaths:
+            return self.datapaths[datapath]
+
         vdo = VirtualDataObject(datapath)
         self._vdos.append(vdo)
+        self.datapaths[datapath] = vdo
+        vdo_id = storage.get_data_id(datapath) 
+        self.__vdo_dict__[vdo_id] = vdo
         return vdo
 
     '''
@@ -187,6 +201,7 @@ class VirtualDataSpace():
         vdo.copy_from = vdo_src
         vdo.consumers = [cons for cons in vdo_src.consumers]
         vdo.producers = [prod for prod in vdo_src.producers]
+        self.__vdo_dict__[vdo_id] = vdo
         return vdo
 
     '''
@@ -194,7 +209,7 @@ class VirtualDataSpace():
     '''
     def delete(self, vdo):
         del self.__vdo_dict__[vdo.__id__]
-        self._vdos.remove(vdo.__id__)
+        self._vdos.remove(vdo)
 
     '''
     retrieve one

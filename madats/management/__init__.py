@@ -1,13 +1,17 @@
 import argparse
 from madats.management import workflow_manager, execution_manager
 from madats.utils.constants import ExecutionMode
+from madats.core import coordinator
 
 def execute(args):
     workflow = args.workflow
     language = args.language
     mode = ExecutionMode.type(args.mode)
-    dag = workflow_manager.parse(workflow, language)
-    execution_manager.execute(dag, mode)
+
+    vds = coordinator.map(workflow, language)
+    coordinator.plan(vds)
+    coordinator.manage(vds, mode)
+    coordinator.destroy(vds)
 
 def main():
     parser = argparse.ArgumentParser(description="",
