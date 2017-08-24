@@ -39,6 +39,7 @@ class VirtualDataObject(object):
         # data properties that impact data management decisions
         self._size = 0.0  # size in MB
         self._persistence = Persistence.NONE
+        self._persist = False
         self._replication = 0
         self._deadline = 0 # epoch_time_in_ms
         self._destination = ''
@@ -65,7 +66,7 @@ class VirtualDataObject(object):
 
     @producers.setter
     def producers(self, tasks):
-        if type(t) == list:
+        if type(tasks) == list:
             self._producers = tasks
         else:
             self._producers = [tasks]
@@ -76,7 +77,7 @@ class VirtualDataObject(object):
 
     @consumers.setter
     def consumers(self, tasks):
-        if type(t) == list:
+        if type(tasks) == list:
             self._consumers = tasks
         else:
             self._consumers = [tasks]
@@ -90,12 +91,18 @@ class VirtualDataObject(object):
         self._size = size
 
     @property
+    def persist(self):
+        return self._persist
+
+    @property
     def persistence(self):
         return self._persistence
 
     @persistence.setter
     def persistence(self, persistence):
         self._persistence = persistence
+        if persistence != Persistence.NONE:
+            self._persist = True
 
     @property
     def replication(self):
@@ -196,7 +203,7 @@ class VirtualDataSpace():
         if self.vdo_exists(vdo_id):
             return self.__vdo_dict__[vdo_id]
 
-        vdo = self.create_vdo(vdo)
+        vdo = self.create_vdo(dest_path)
         vdo_src.copy_to.append(vdo)
         vdo.copy_from = vdo_src
         vdo.consumers = [cons for cons in vdo_src.consumers]

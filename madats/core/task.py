@@ -24,7 +24,7 @@ class Task(object):
     A workflow task object that corresponds to a single stage/step/task/job in the workflow
     """
 
-    def __init__(self, command='', type=TaskType.COMPUTE):
+    def __init__(self, command, type=TaskType.COMPUTE):
         self.__id__  = str(uuid.uuid4())
         self._name = ''
         self._command = command
@@ -156,8 +156,22 @@ class DataTask(Task):
     """
 
     def __init__(self, vdo_src, vdo_dest):
-        Task.__init__(self, type=TaskType.DATA)
+        Task.__init__(self, command='', type=TaskType.DATA)        
         self.vdo_src = vdo_src
         self.vdo_dest = vdo_dest
-        self.add_param(vdo_src)
-        self.add_param(vdo_dest)
+        self.add_param(vdo_src.abspath)
+        self.add_param(vdo_dest.abspath)
+        self.command = self.__set_data_mover__(vdo_src, vdo_dest)
+
+    def __set_data_mover__(self, vdo_src, vdo_dest):
+        # the default data mover is 'cp', however, it
+        # changes based on the source and destination
+        # storage/file systems
+        command = 'cp'
+
+        # TODO: add flexible data mover; can take it as an arg as well from the calling function
+
+        return command
+        
+
+        

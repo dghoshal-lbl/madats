@@ -93,9 +93,13 @@ class StorageHierarchy(object):
         '''
         if the path resolves to the root directory, then the mount-point
         possibly doesn't exist on the system yet; hence, assign 'root'
+        assign default values unspecified storage tier
         '''
         self._mount_points[path] = default_id
-        self._hierarchy[default_id] = {'mount': path}
+        self._hierarchy[default_id] = {'mount': path,
+                                       'persist': 'None',
+                                       'interface': 'posix',
+                                       'bandwidth': 0}
 
         return default_id
             

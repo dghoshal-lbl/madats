@@ -12,6 +12,8 @@
 """
 
 from madats.utils.constants import Policy
+from madats.core import storage
+from madats.core.task import DataTask
 
 __data_tasks__ = {}
 
@@ -46,7 +48,7 @@ def create_data_task(vds, vdo_src, vdo_dest, **kwargs):
                 if task.params[i] == src_data:
                     task.params[i] = dest_data
 
-        data_task = DataTask(src_data, dest_data, **kwargs)
+        data_task = DataTask(vdo_src, vdo_dest, **kwargs)
         __data_tasks__[dt] = data_task
         """
         - data stagein task becomes the consumer of the original data
@@ -85,7 +87,7 @@ def create_data_task(vds, vdo_src, vdo_dest, **kwargs):
         """
         create a data task and add it to the respective VDOs
         """
-        data_task = DataTask(dest_data, src_data, **kwargs)
+        data_task = DataTask(vdo_dest, vdo_src, **kwargs)
         __data_tasks__[dt] = data_task
 
         vdo_dest.producers = [data_task]        
@@ -115,8 +117,11 @@ def get_selected_storage(property='bandwidth'):
     order_key = property
     max_value = 0
     fast_tier = None
+
+    #print(storage_hierarchy)
     for tier in storage_hierarchy:
-        value = storage_hierarchy[order_key]
+        #print("{}: {}".format(tier, storage_hierarchy[tier]))
+        value = storage_hierarchy[tier][order_key]
         if value > max_value:
             max_value = value
             fast_tier = tier

@@ -13,7 +13,7 @@ import os
 import shlex
 from madats.core.vds import VirtualDataSpace, VirtualDataObject
 from madats.utils.constants import ExecutionMode, Policy
-from madats.management import workflow_manager, execution_manager
+from madats.management import workflow_manager, execution_manager, data_manager
 
 '''
 Coordinates the movement of data between multiple storage tiers through VDS (manages VDS and virtual data objects)
