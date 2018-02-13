@@ -117,7 +117,7 @@ def get_data_id(datapath):
 """
 return the storage identifier and relative path w.r.t. the storage mount point
 """
-def get_elements(datapath):
+def get_path_elements(datapath):
     storage_id = __storage_hierarchy__.get_storage_id(datapath)
     mount_point = __storage_hierarchy__.get_mount_point(storage_id)
 
@@ -167,10 +167,34 @@ def get_storage_tiers():
     return __storage_hierarchy__.hierarchy
 
 
+"""
+select the best storage tier based on the selected property 
+"""
+def get_selected_storage(property='bandwidth'):
+    storage_hierarchy = get_storage_tiers()
+
+    # assign the hierarchy order based on the storage property; in this case, the storage bandwidth
+    ordered_hierarchy = {}
+    sorted_values = []
+    order_key = property
+    max_value = 0
+    fast_tier = None
+
+    #print(storage_hierarchy)
+    for tier in storage_hierarchy:
+        #print("{}: {}".format(tier, storage_hierarchy[tier]))
+        value = storage_hierarchy[tier][order_key]
+        if value > max_value:
+            max_value = value
+            fast_tier = tier
+
+    return fast_tier
+
+
 if __name__ == '__main__':
     d1 = '/home/dghoshal/dir1'
     d2 = '/Volumes/MobileBackups/Backups.backupdb'
     d3 = '/scratch/scratchdirs/cscratch1/dghoshal'
-    print("{}: {}".format(d1, get_elements(d1)))
-    print("{}: {}".format(d2, get_elements(d2)))
-    print("{}: {}".format(d3, get_elements(d3)))
+    print("{}: {}".format(d1, get_path_elements(d1)))
+    print("{}: {}".format(d2, get_path_elements(d2)))
+    print("{}: {}".format(d3, get_path_elements(d3)))

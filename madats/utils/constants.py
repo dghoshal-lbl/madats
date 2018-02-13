@@ -80,12 +80,19 @@ class Policy(object):
     WORKFLOW_AWARE = 1
     STORAGE_AWARE = 2
 
-    policy_name = {NONE: 'NONE', WORKFLOW_AWARE: 'WORKFLOW_AWARE',
-                   STORAGE_AWARE: 'STORAGE_AWARE'}
+    policy_name = {NONE: 'none', WORKFLOW_AWARE: 'wfa',
+                   STORAGE_AWARE: 'sta'}
+
+    policy_type = {'none': NONE, 'wfa': WORKFLOW_AWARE,
+                   'sta': STORAGE_AWARE}
 
     @staticmethod
     def name(policy):
         return Policy.policy_name.get(policy, '')
+
+    @staticmethod
+    def type(name):
+        return Policy.policy_type.get(name, Policy.NONE)
 
 
 """

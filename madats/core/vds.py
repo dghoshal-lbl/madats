@@ -18,6 +18,10 @@ import uuid
 from madats.utils.constants import TaskType, Persistence, Policy, UNKNOWN
 from madats.core.scheduler import Scheduler
 from madats.core import storage
+try:
+    from os import scandir
+except ImportError:
+    from scandir import scandir
 
 class VirtualDataObject(object):
     """
@@ -25,18 +29,16 @@ class VirtualDataObject(object):
     """
     
     def __init__(self, datapath):        
-        self.__id__ = storage.get_data_id(datapath) # get the MD5 hash of the datapath string
-        storage_id, relative_path = storage.get_elements(datapath)
-        self._storage_id = storage_id
-        self._relative_path = relative_path
-
         # a virtual data object abstraction
         self._abspath = os.path.abspath(datapath)
+        self.__id__ = storage.get_data_id(self._abspath) # get the MD5 hash of the datapath string
+        self._storage_id, self._relative_path = storage.get_path_elements(self._abspath)
+
         self._producers = []
         self._consumers = []
 
         # data properties that impact data management decisions
-        self._size = 0.0  # size in MB
+        self._size = self.__set_default_size__()  # size in bytes
         self._persistence = Persistence.NONE
         self._persist = False
         self._replication = 0
@@ -141,6 +143,26 @@ class VirtualDataObject(object):
     def add_producer(self, task):
         self._producers.append(task)
 
+    def __set_default_size__(self):
+        size = 0
+        if os.path.exists(self.abspath):
+            size = self.__get_size__(self.abspath)
+        return size
+
+    def __get_size__(self, path):
+        total_size = 0
+        if not os.path.exists(path):
+            return 0
+        elif os.path.isdir(path):
+            for entry in scandir(path):
+                if entry.is_dir(follow_symlinks=False):
+                    total_size += self.__get_size__(entry.path)
+                else:
+                    total_size += entry.stat(follow_symlinks=False).st_size
+        else:
+            total_size = os.path.getsize(path)
+        return total_size
+
 ######################################################################################
 class VirtualDataSpace():
     """
@@ -157,10 +179,12 @@ class VirtualDataSpace():
     """
     def __init__(self):
         self.__vdo_dict__ = {}
+        self.__task_dict__ = {}
         self._vdos = []
         self._tasks = []
         self.datapaths = {}
         self._data_management_policy = Policy.NONE
+        self._storage_tiers = {}
     
     @property
     def vdos(self):
@@ -170,27 +194,69 @@ class VirtualDataSpace():
     def tasks(self):
         return self._tasks
 
-    '''
-    creates a Task in the VDS
-    '''
-    def create_task(self, command):
-        task = Task(command, type)
-        self._tasks.append(task)
-        return task
+#    '''
+#    creates a Task in the VDS
+#    '''
+#    def create_task(self, command):
+#        task = Task(command, type)
+#        self._tasks.append(task)
+#        return task
+
+#   '''
+#    creates and adds a VDO in the VDS
+#    '''
+#    def create_vdo(self, datapath):
+#        if datapath in self.datapaths:
+#            return self.datapaths[datapath]
+#
+#        vdo = VirtualDataObject(datapath)
+#        self.vdos.append(vdo)
+#        self.datapaths[datapath] = vdo
+#        vdo_id = storage.get_data_id(datapath) 
+#        self.__vdo_dict__[vdo_id] = vdo
+#        return vdo
 
     '''
-    creates and adds a VDO in the VDS
+    adds a VDS object (task/VDO) to the VDS
     '''
-    def create_vdo(self, datapath):
-        if datapath in self.datapaths:
-            return self.datapaths[datapath]
+    def add(self, vds_obj):
+        if type(vds_obj) == Task:
+            self.__add_task__(vds_obj)
+        elif type(vds_obj) == VirtualDataObject:
+            self.__add_vdo__(vds_obj)
+        else:
+            print('Invalid object type {}. VDS objects can be only {} or {}'.format(obj_type,
+                                                                                    Task.__name__,
+                                                                                    VirtualDataObject.__name__))
 
-        vdo = VirtualDataObject(datapath)
-        self.vdos.append(vdo)
-        self.datapaths[datapath] = vdo
-        vdo_id = storage.get_data_id(datapath) 
-        self.__vdo_dict__[vdo_id] = vdo
-        return vdo
+
+    '''
+    adds a task to the VDS 
+    '''
+    def __add_task__(self, task):
+        if task.__id__ in self.__task_dict__:
+            pass
+        else:
+            self._tasks.append(task)
+            for input in task.inputs:
+                if type(input) == VirtualDataObject:
+                    self.__add_vdo__(input)
+
+            for output in task.outputs:
+                if type(output) == VirtualDataObject:
+                    self.__add_vdo__(output)
+        
+
+    '''
+    adds a VDO to the VDS 
+    '''
+    def __add_vdo__(self, vdo):
+        # only add vdo when it's not already in vds
+        if not self.vdo_exists(vdo.__id__):
+            self.vdos.append(vdo)
+            self.datapaths[vdo.abspath] = vdo
+            self.__vdo_dict__[vdo.__id__] = vdo
+
 
     '''
     copies a VDO to another VDO in the VDS

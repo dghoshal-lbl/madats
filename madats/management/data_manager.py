@@ -108,32 +108,12 @@ def create_data_task(vds, vdo_src, vdo_dest, **kwargs):
         vds.delete(vdo_src)
 
 
-def get_selected_storage(property='bandwidth'):
-    storage_hierarchy = storage.get_storage_tiers()
-
-    # assign the hierarchy order based on the storage property; in this case, the storage bandwidth
-    ordered_hierarchy = {}
-    sorted_values = []
-    order_key = property
-    max_value = 0
-    fast_tier = None
-
-    #print(storage_hierarchy)
-    for tier in storage_hierarchy:
-        #print("{}: {}".format(tier, storage_hierarchy[tier]))
-        value = storage_hierarchy[tier][order_key]
-        if value > max_value:
-            max_value = value
-            fast_tier = tier
-
-    return fast_tier
-
 """
 workflow-aware data management: data is moved only when there is an overlap
 between computation and data transfer steps.
 """
 def dm_workflow_aware(vds):    
-    fast_tier = get_selected_storage()
+    fast_tier = storage.get_selected_storage()
     '''
     create a shallow copy of the VDO list, because new VDOs will be added to VDS now
     '''
@@ -167,7 +147,7 @@ def dm_workflow_aware(vds):
 storage-aware data management: data is moved/kept in the fast tier for all inputs and outputs
 """
 def dm_storage_aware(vds):
-    fast_tier = get_selected_storage()
+    fast_tier = storage.get_selected_storage()
     '''
     create a shallow copy of the VDO list, because new VDOs will be added to VDS now
     '''

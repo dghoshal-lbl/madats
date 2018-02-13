@@ -4,55 +4,56 @@ MaDaTS: Managing Data on Tiered Storage for Scientific Workflows
 -![MaDaTS Architecture](docs/figs/madats.png)
 
 MaDaTS provides an integrated data management and workflow execution
-framework. It provides high-level data abstractions through a virtual
-data space (VDS) for managing data across a multi-tiered storage hierarchy
-during the lifetime of workflow execution. Users can programmatically
-create and manage VDS, and can also use command-line utilities to manage
-workflows and associated data through VDS. It uses a pluggable architecture
-as shown in the figure above. Application programmers can build and use
-specific plugins to integrate with different workflows and systems. By default,
-MaDaTS provides a set of plugins for managing workflows and data on HPC systems.
-These plugins use the Tigres workflow API for managing their workflows and
-are able to interface with SLURM and PBS scheduler. It can parse workflow
-descriptions written in JSON, libconfig and YAML languages.
+framework. It provides high-level data abstractions through the Virtual
+Data Space (VDS). VDS simplifies the data management across multiple
+storage tiers and file systems during the lifetime of workflow execution.
 
 In addition to the workflow descriptions, users can programmatically
 create and manage a VDS, which is a data-centric way of representing
 the workflow and data. The current API supports Python. Below are the
 key functions in the API.
 
-    1. create a VDS
-        madats.create() -> VDS  
+1.  Command-line utilities
+    madats -w <workflow-description> [-l <workflow language> -m <execution mode> -p <data management policy>]
+    madats-copy <source> <dest> [-p <protocol> --remove_src]
+    madats-gen -i <workflow-desc> [-f <format (yaml/json)> -o <outpath>] 
+    madats-execute -w <workflow> -e <workflow-engine (slurm/pbs/tigres)>
+    madats-info --list-workflows/--stats <workflow-id>/--query <query>
 
-    2. map a workflow into VDS or create a data-centric workflow in VDS 
-        madats.map(VDS, workflow[, data_properties])  
+2. API
+   madats.initVDS()
+   madats.map(workflow, language, policy)
+   madats.plan(vds)
+   madats.manage(vds, execute_mode)
+   madats.query(vds, query)
+   madats.destroy(vds)
 
-		madats.vds.VirtualDataObject(data_object) -> VirtualDataObject  
-    	madats.vds.Task() > Task  
-    	VirtualDataObject.add_consumer(Task)  
-    	VirtualDataObject.add_producer(Task)  
-    	VDS.add(VirtualDataObject)  
+Example
+-------
+	import madats
+	
+	# Initialize a Virtual Data Space
+	vds = madats.initVDS()
+	# Set up the data management policy for the VDS
+	vds.data_management_policy = madats.Policy.STORAGE_AWARE
 
-    3. define data management policy and extend workflow  
-       madats.plan(VDS, policy)  
+	# Create VDOs and associate them with tasks in the VDS
+	vdo = vds.create_vdo('/path/to/data')
+	task = vds.create_task(command='/application/program')
+	task.inputs = ['constant_param', vdo]
 
-    4. manage data and workflow  
-       madats.manage(VDS[, async, scheduler, auto_exec])  
+	# Plan workflow execution and data management 
+	madats.plan(vds)
+	# Manage data and workflow execution based on the plan 
+	madats.manage(vds, madats.ExecutionMode.DAG)
 
-    5. query the VDS
-       madats.query(VDS, query)
-
-    6. destroy the VDS  
-       madats.destroy(VDS)  
-
-Dependencies
----------------
-   - Tigres (if using MaDaTS execution plugin)
+	# Cleanup
+	madats.destroy(vds)
 
 Install
 --------
 1. Using Anaconda python  
-   	 conda create -n <env> python   
+      	 conda create -n <env> python   
 	 source activate <env>  
 	 python setup.py install
 
@@ -65,10 +66,11 @@ Usage
 --------
 1. Using the MaDaTS API
    - compose a data-centric workflow using MaDaTS API    
-     -- create a VDS [madats.create()]  
+     #-- create a VDS [madats.create()]  
+     -- create a VDS [madats.initVDS()]  
      -- add VDOs to a VDS [vds.add(vdo)]  
      -- add producers and consumers to VDOs [vdo.add_producers(task)/consumers(task)]  
-     -- plan the data management strategies [madats.plan(vds, policy)]  
+     #-- plan the data management strategies [madats.plan(vds, policy)]  
      -- manage the data and execute the workflow [madats.manage(vds)]  
      -- destroy the workflow [madats.destroy(vds)]  
 
@@ -81,50 +83,3 @@ Test
 --------
 	 python tests/tests.py
 
-Plugins
---------
-The plugins in MaDaTS can be configured using config/config.ini.
-More plugins can be built and kept in the appropriate directory
-under plugins/. The plugins should inherit the corresponding
-abstract interfaces, the module should be created under the
-appropriate plugin-type, and the class name should be in the format:
-<Plugin-name><Plugin-type>. For example, the MaDaTS storage plugin
-is in the module plugins.storage.madats_storage and the class
-name is MadatsStorage(AbstractStorage).
-
-Currently, MaDaTS uses 6 different plugins.
-
-1. Workflow: provides an abstraction for the workflow  
-   Module Directory: plugins/workflow  
-   Extends: AbstractWorkflow  
-   Abstract Functions: parse()  
-
-2. Data-manager: provides an abstraction for data management policies  
-   Module Directory: plugins/datamgr  
-   Extends: AbstractDatamgr  
-   Abstract Functions: policy_engine()  
-
-3. Storage: provides an abstraction for storage interfaces  
-   Module Directory: plugins/storage  
-   Extends: AbstractStorage  
-   Abstract Functions: get_hierarchy(), get_id_path(), get_storage_path(), get_storage_id()  
-
-4. Execution: provides an abstraction for workflow execution engines  
-   Module Directory: plugins/execution  
-   Extends: AbstractExecution  
-   Abstract Functions: execute(), wait(), status()  
-
-5. Copy: provides an abstraction for copying/moving/transferring data  
-   Module Directory: plugins/copy  
-   Extends: AbstractCopy  
-   Abstract Functions: copy(), poll()  
-
-6. Scheduling: provides an abstraction for job schedulers and job management  
-   Module Directory: plugins/scheduling  
-   Extends: AbstractScheduling  
-   Abstract Functions: set(), submit(), wait(), status()  
-
-
-
-
-   

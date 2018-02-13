@@ -29,16 +29,17 @@ def parse_yaml(workflow):
             tasks = yaml.load(wf)
             for t in tasks:
                 info = tasks[t]
-                task = Task()
+                command = ''
+                if 'command' in info:
+                    command = info['command']
+                else:
+                    print("'command' missing in task description!")
+                    sys.exit()
+                task = Task(command)
                 if 'name' in info:
                     task.name = info['name']
                 else:
                     task.name = 'task' + str(idx)
-                if 'command' in info:
-                    task.command = info['command']
-                else:
-                    print("'command' missing in task description!")
-                    sys.exit()
                 if 'inputs' in info:
                     task.inputs = info['inputs']
                 if 'outputs' in info:

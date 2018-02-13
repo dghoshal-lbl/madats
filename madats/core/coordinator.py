@@ -20,42 +20,42 @@ Coordinates the movement of data between multiple storage tiers through VDS (man
  - creates data tasks and a DAG -- manages `WHAT' data is moved
 '''
 
-"""
-maps a task into a VDS, making it a collection of VDOs
-"""
-def __map2vds__(vds, task):
-    for input in task.inputs:
-        data_object = os.path.abspath(input)
-        vdo = vds.create_vdo(data_object)
-        vdo.add_consumer(task)
-
-    for output in task.outputs:
-        data_object = os.path.abspath(output)
-        vdo = vds.create_vdo(data_object)
-        vdo.add_producer(task)
-
+#"""
+#maps a task into a VDS, making it a collection of VDOs
+#"""
+#def __map2vds__(vds, task):
+#    for input in task.inputs:
+#        data_object = os.path.abspath(input)
+#        vdo = vds.create_vdo(data_object)
+#        vdo.add_consumer(task)
+#    for output in task.outputs:
+#        data_object = os.path.abspath(output)
+#        vdo = vds.create_vdo(data_object)
+#        vdo.add_producer(task)
 
 
-"""
-initialize a VDS
-"""
-def initVDS():
-    vds = VirtualDataSpace()
-    return vds
+#"""
+#initialize a VDS
+#"""
+#def initVDS():
+#    vds = VirtualDataSpace()
+#    return vds
 
 
 """
 given a workflow, map it to VDS
 """
-def map(workflow, language='yaml'):
+def map(workflow, language='yaml', policy=Policy.NONE):
     if language == 'yaml':
         task_list, input_map = workflow_manager.parse_yaml(workflow)
     else:
         print('Invalid workflow description language {}'.format(language))
         sys.exit()
     vds = VirtualDataSpace()
+    vds.data_management_policy = policy
     for task in task_list:
-        __map2vds__(vds, task)
+        vds.add(task)
+        #__map2vds__(vds, task)
     
     '''
     for vdo in vds.vdos:
@@ -66,26 +66,34 @@ def map(workflow, language='yaml'):
     return vds
 
 
-"""
-manage a VDS using different data management strategies
-creates a DAG of the extended workflow containing data tasks and compute tasks
-- it's an adjacency list representation of the graph where the list pertaining 
-to a vertex contains the vertices you can reach directly from that vertex
-"""
-def plan(vds):
-    policy = vds.data_management_policy
-    if policy == Policy.NONE:
-        return
-    elif policy == Policy.WORKFLOW_AWARE:
-        data_manager.dm_workflow_aware(vds)
-    elif policy == Policy.STORAGE_AWARE:
-        data_manager.dm_storage_aware(vds)
+#"""
+#manage a VDS using different data management strategies
+#creates a DAG of the extended workflow containing data tasks and compute tasks
+#- it's an adjacency list representation of the graph where the list pertaining 
+#to a vertex contains the vertices you can reach directly from that vertex
+#"""
+#def plan(vds):
+#    policy = vds.data_management_policy
+#    if policy == Policy.NONE:
+#        return
+#    elif policy == Policy.WORKFLOW_AWARE:
+#        data_manager.dm_workflow_aware(vds)
+#    elif policy == Policy.STORAGE_AWARE:
+#        data_manager.dm_storage_aware(vds)
     
         
 """
-manage VDS by managing data and executing workflow
+manage VDS by managing data as per the defined policy
+ - create data tasks and compute tasks
+ - manage the workflow consisting of data and compute tasks
 """
 def manage(vds, execute_mode=ExecutionMode.DAG):
+    policy = vds.data_management_policy
+    if policy == Policy.WORKFLOW_AWARE:
+        data_manager.dm_workflow_aware(vds)
+    elif policy == Policy.STORAGE_AWARE:
+        data_manager.dm_storage_aware(vds)
+
     dag = {}
     for vdo in vds.vdos:
         for prod in vdo.producers:
@@ -94,7 +102,7 @@ def manage(vds, execute_mode=ExecutionMode.DAG):
             for cons in vdo.consumers:
                 '''
                 - add the dependencies for each task
-                - avoid self-dependencies to avoid deadloack  
+                - avoid self-dependencies to avoid deadlock  
                 '''
                 if cons not in dag[prod] and cons != prod:
                     dag[prod].append(cons)
@@ -104,12 +112,11 @@ def manage(vds, execute_mode=ExecutionMode.DAG):
         for con in vdo.consumers:
             if con not in dag:
                 dag[con] = []
-    
-    '''
-    print("**************")
-    workflow_manager.display(dag)
-    print("**************")
-    '''
+
+    #print("**************")
+    #workflow_manager.display(dag)
+    #print("**************")
+
     execution_manager.execute(dag, execute_mode) 
 
 
@@ -121,11 +128,11 @@ def query(vds, query):
     pass
 
 
-"""
-destroy the VDS
-"""
-def destroy(vds):
-    vdos = vds.vdos
-    for vdo in vdos:
-        vds.delete(vdo)
+#"""
+#destroy the VDS
+#"""
+#def destroy(vds):
+#    vdos = vds.vdos
+#    for vdo in vdos:
+#        vds.delete(vdo)
 

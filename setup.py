@@ -28,6 +28,6 @@ setup(name='MaDaTS',
                    'License :: OSI Approved :: BSD License'
       ],
       install_requires=install_deps,
-      entry_points={'console_scripts': ['madats = madats.core:main']},
+      entry_points={'console_scripts': ['madats = madats.cli:main']},
       #data_files=[('',['setup.py'])]      
 )
