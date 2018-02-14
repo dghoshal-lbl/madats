@@ -7,7 +7,7 @@ import madats
 
 def main():
     vds = VirtualDataSpace()
-    vds.data_management_policy = Policy.WORKFLOW_AWARE
+    vds.data_management_policy = Policy.STORAGE_AWARE
     print('Data management policy: {}'.format(Policy.name(vds.data_management_policy)))
     vdo = VirtualDataObject('/Users/DGhoshal/workdir/uda/css/testfile')
     vdo.persistence = Persistence.LONG_TERM

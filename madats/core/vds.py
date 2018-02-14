@@ -202,25 +202,25 @@ class VirtualDataSpace():
 #        self._tasks.append(task)
 #        return task
 
-#   '''
-#    creates and adds a VDO in the VDS
-#    '''
-#    def create_vdo(self, datapath):
-#        if datapath in self.datapaths:
-#            return self.datapaths[datapath]
-#
-#        vdo = VirtualDataObject(datapath)
-#        self.vdos.append(vdo)
-#        self.datapaths[datapath] = vdo
-#        vdo_id = storage.get_data_id(datapath) 
-#        self.__vdo_dict__[vdo_id] = vdo
-#        return vdo
+    '''
+    maps a datapath to a VDO: creates and adds a VDO in the VDS
+    '''
+    def map(self, datapath):
+        if datapath in self.datapaths:
+            return self.datapaths[datapath]
+
+        vdo = VirtualDataObject(datapath)
+        self.vdos.append(vdo)
+        self.datapaths[datapath] = vdo
+        vdo_id = storage.get_data_id(datapath) 
+        self.__vdo_dict__[vdo_id] = vdo
+        return vdo
 
     '''
     adds a VDS object (task/VDO) to the VDS
     '''
     def add(self, vds_obj):
-        if type(vds_obj) == Task:
+        if type(vds_obj) == Task or type(vds_obj) == DataTask:
             self.__add_task__(vds_obj)
         elif type(vds_obj) == VirtualDataObject:
             self.__add_vdo__(vds_obj)
@@ -234,9 +234,7 @@ class VirtualDataSpace():
     adds a task to the VDS 
     '''
     def __add_task__(self, task):
-        if task.__id__ in self.__task_dict__:
-            pass
-        else:
+        if not self.task_exists(task.__id__):
             self._tasks.append(task)
             for input in task.inputs:
                 if type(input) == VirtualDataObject:
@@ -268,7 +266,7 @@ class VirtualDataSpace():
         if self.vdo_exists(vdo_id):
              return self.__vdo_dict__[vdo_id]
 
-        vdo = self.create_vdo(dest_path)
+        vdo = self.map(dest_path)
         vdo_src.copy_to.append(vdo)
         vdo.copy_from = vdo_src
         vdo.consumers = [cons for cons in vdo_src.consumers]
@@ -303,13 +301,159 @@ class VirtualDataSpace():
     '''
 
     '''
-    search
+    check for a VDO
     '''
     def vdo_exists(self, vdo_id):
         if vdo_id in self.__vdo_dict__:
             return True
         else:
             return False
+
+    '''
+    check for a task
+    '''
+    def task_exists(self, task_id):
+        if task_id in self.__task_dict__:
+            return True
+        else:
+            return False
+
+    """
+    creates a data task to move a virtual data object to a different storage layer(s)
+    """
+    def create_data_task(self, vdo_src, vdo_dest, **kwargs):
+        if not self.vdo_exists(vdo_src.__id__):
+            self.__add_vdo__(vdo_src)
+        if not self.vdo_exists(vdo_dest.__id__):
+            self.__add_vdo__(vdo_dest)
+        src_data = vdo_src.abspath
+        dest_data = vdo_dest.abspath
+        # if staging in data, vdo_src has no producers
+        if len(vdo_src.producers) == 0 and len(vdo_src.consumers) > 0:
+            """
+            if the source is not on archive and is already staged-in with
+            the `latest` data then do not stage-in again.
+            if the source is in on archive or the data is stale, then
+            stage-in
+            """
+            if vdo_src.storage_id != 'archive' and storage.is_same(vdo_src.abspath, vdo_dest.abspath):
+                print("No data movement necessary, {} == {}".format(vdo_src.abspath, vdo_dest.abspath))
+                self.replace(vdo_src, vdo_dest)
+                return
+
+            """
+            check the datatask-id and create a datatask
+            """
+            dt_id = self.__get_datatask_id__(vdo_src, vdo_dest)            
+            if self.task_exists(dt_id):
+                print('Data task ({}) already exists'.format(dt_id))
+                return
+            else:
+                print('Creating data stage-in task ({} -> {})'.format(src_data, dest_data))
+
+            """
+            update the I/O parameters if data is moved
+            """
+            for task in vdo_dest.consumers:
+                params = task.inputs
+                for i in range(len(params)):
+                    if task.inputs[i] == vdo_src:
+                        task.inputs[i] = vdo_dest
+            for task in vdo_dest.producers:
+                params = task.inputs
+                for i in range(len(params)):
+                    if task.inputs[i] == vdo_src:
+                        task.inputs[i] = vdo_dest
+
+            data_task = DataTask(dt_id, vdo_src, vdo_dest, **kwargs)
+            self.__add_task__(data_task)
+            """
+            - data stagein task becomes the consumer of the original data
+            - data stagein task becomes the producer of the new data
+            - consumers of the original data become the consumers of the new data
+            """
+            vdo_dest.producers = [data_task]
+            vdo_src.consumers = [data_task]
+        # if staging out data, vdo_src has no consumers
+        elif (len(vdo_src.consumers) == 0 and len(vdo_src.producers) > 0) or \
+                (len(vdo_src.consumers) > 0 and len(vdo_src.producers) > 0 and vdo_src.persist == True):
+            """
+            stage-out if the output data changed
+            """
+            if vdo_src.storage_id != 'archive' and storage.is_same(vdo_src.abspath, vdo_dest.abspath):
+                print("No data movement necessary, {} == {}".format(vdo_src.abspath, vdo_dest.abspath))
+                self.replace(vdo_src, vdo_dest)
+                return
+
+            dt_id = self.__get_datatask_id__(vdo_src, vdo_dest)            
+            if self.task_exists(dt_id):
+                print('Data task ({}) already exists'.format(dt))
+                return
+            else:
+                print('Data stage-out task ({} -> {}) created'.format(src_data, dest_data))
+                
+            """
+            update the I/O paramters to use the moved data
+            """
+            for task in vdo_src.consumers:
+                params = task.inputs
+                for i in range(len(params)):
+                    if task.inputs[i] == vdo_src:
+                        task.inputs[i] = vdo_dest
+            for task in vdo_src.producers:
+                params = task.inputs
+                for i in range(len(params)):
+                    if task.inputs[i] == vdo_src:
+                        task.inputs[i] = vdo_dest
+
+            """
+            create a data task and add it to the respective VDOs
+            """
+            data_task = DataTask(dt_id, vdo_dest, vdo_src, **kwargs)
+            self.__add_task__(data_task)
+            
+            vdo_dest.producers = [data_task]        
+            vdo_src.consumers.append(data_task)
+            vdo_dest.consumers = []
+        # for non-persistent intermediate data
+        else:
+            for task in vdo_dest.consumers:
+                params = task.inputs
+                for i in range(len(params)):
+                    if task.inputs[i] == vdo_src:
+                        task.inputs[i] = vdo_dest            
+            for task in vdo_dest.producers:
+                params = task.inputs
+                for i in range(len(params)):
+                    if task.inputs[i] == vdo_src:
+                        task.inputs[i] = vdo_dest            
+            print('Changing datapath from {} to {}'.format(src_data, dest_data))
+            self.delete(vdo_src)
+
+
+    '''
+    '''
+    def replace(self, vdo_src, vdo_dest):
+        for task in vdo_dest.consumers:
+            params = task.inputs
+            for i in range(len(params)):
+                if task.inputs[i] == vdo_src:
+                    task.inputs[i] = vdo_dest            
+        for task in vdo_dest.producers:
+            params = task.inputs
+            for i in range(len(params)):
+                if task.inputs[i] == vdo_src:
+                    task.inputs[i] = vdo_dest            
+        print('Changing datapath from {} to {}'.format(vdo_src.abspath, vdo_dest.abspath))
+        self.delete(vdo_src)
+
+
+    '''
+    calculate data-task id based on the src and dest data
+    '''
+    def __get_datatask_id__(self, vdo_src, vdo_dest):
+            return (vdo_src.__id__ + vdo_dest.__id__)
+
 
     '''
     data management policy is a VDS property that defines data movement policies in the VDS
@@ -448,14 +592,17 @@ class Task(object):
     def get_schedopt(self, opt):
         return self._scheduler_opts[opt]
 
+
 ##########################################################################
 class DataTask(Task):
     """
-    A datatask that is specifically marked to move data objects between storage tiers
+    A datatask that is specifically marked to move data objects between storage tiers.
+    This is the 
     """
 
-    def __init__(self, vdo_src, vdo_dest):
+    def __init__(self, id, vdo_src, vdo_dest):
         Task.__init__(self, command='', type=TaskType.DATA)        
+        self.__id__ = id
         self.vdo_src = vdo_src
         self.vdo_dest = vdo_dest
         self.inputs = [vdo_src, vdo_dest]
@@ -463,15 +610,30 @@ class DataTask(Task):
         self.command = self.__set_data_mover__(vdo_src, vdo_dest)
 
 
+    def get_datatask_id(self):
+        return self.__id__
+
+
+    """
+    an abstract data mover that copies data based on the storage tier
+    """
     def __set_data_mover__(self, vdo_src, vdo_dest):
         # the default data mover is 'cp', however, it
         # changes based on the source and destination
         # storage/file systems
-        data_directory = os.path.dirname(vdo_dest.abspath)
-        command = 'mkdir -p {}\n'.format(data_directory)
-        command = command + 'cp -R'
-
-        # TODO: add flexible data mover; can take it as an arg as well from the calling function
+        dest_directory = os.path.dirname(vdo_dest.abspath)
+        if vdo_src.storage_id == 'archive':
+            # hack: using ls -lrt at the end so that using
+            # vdo_src and vdo_dest params work in general
+            # through the execution manager, which appends
+            # the task inputs at the end of the command
+            command = 'mkdir -p {}; cd {}; hsi -q "prompt; mget {}"; ls '.format(dest_dir, vdo_dest.abspath, vdo_src.abspath)
+        elif vdo_dest.storage_id == 'archive':
+            src_dir = os.path.dirname(vdo_src.abspath)
+            filename = os.path.basename(vdo_dest.abspath)
+            command = 'cd {}; hsi -q "prompt; mkdir -p {}; cd {}; mput {}"; ls '.format(src_dir, dest_dir, dest_dir, filename)
+        else:
+            command = 'mkdir -p {}; cp -R '.format(dest_directory)
 
         return command
         

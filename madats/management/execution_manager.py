@@ -95,13 +95,15 @@ def submit(script, scheduler):
 monitor a batch job script
 """
 def monitor(job_id, scheduler):
-    query_command = "{} | grep {} | awk '{{print $1}}'".format(Scheduler.status_command(scheduler), job_id)
+    #query_command = "{} | grep {} | awk '{{print $1}}'".format(Scheduler.status_command(scheduler), job_id)
+    #query_command = "{} | grep {} ".format(Scheduler.status_command(scheduler), job_id)
+    query_command = Scheduler.status_command(scheduler)
 
     try:
-        result = subprocess.check_output([submit_command], shell=True)
-        while result != '':
+        result = subprocess.check_output([query_command], shell=True)
+        while result.find(job_id) >= 0:
             time.sleep(1)
-            result = subprocess.check_output([submit_command], shell=True)
+            result = subprocess.check_output([query_command], shell=True)
     except Exception as e:
         print("Job monitoring error:")
         print(e)
@@ -205,7 +207,6 @@ def bin_execution(dag):
         print('{}: {}'.format(idx, task_list))
         idx += 1
         
-
     result_list = []
     print("[Workflow-{}] Executing tasks".format(_workflow_id))
     for tasks in task_bins:

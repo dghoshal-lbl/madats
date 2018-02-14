@@ -15,6 +15,7 @@ import hashlib
 import os
 import yaml
 import sys
+import filecmp
 
 class StorageHierarchy(object):
     def __init__(self):
@@ -102,8 +103,8 @@ class StorageHierarchy(object):
                                        'bandwidth': 0}
 
         return default_id
-            
-
+                    
+        
 __storage_hierarchy__ = StorageHierarchy()
 
 """
@@ -189,6 +190,32 @@ def get_selected_storage(property='bandwidth'):
             fast_tier = tier
 
     return fast_tier
+
+
+"""
+if the two datapaths have changed, then the data is stale 
+- uses a simple logic using python's filecmp module
+`POTENTIALLY A USE-CASE FOR DEDUCE`
+"""
+def is_same(datapath1, datapath2):
+    if not os.path.exists(datapath1) or not os.path.exists(datapath2):
+        return False
+    
+    if os.path.isdir(datapath1) != os.path.isdir(datapath2):
+        return False
+    
+    # simple dir comparison, because does not do recursive subdir/file comparison
+    if os.path.isdir(datapath1) and os.path.isdir(datapath2):
+        dircmp = filecmp.dircmp(datapath1, datapath2)
+        if len(dircmp.left_only) > 0 or len(dircmp.right_only) > 0 \
+                or len(dircmp.diff_files) > 0 or len(dircmp.funny_files) > 0:
+            return False
+        (_, mismatch, errors) = filecmp.cmpfiles(datapath1, datapath2, dircmp.common_files, shallow=False)
+        if len(mismatch) > 0 or len(errors) > 0:
+            return False
+        return True
+    
+    return filecmp.cmp(datapath1, datapath2, shallow=False)
 
 
 if __name__ == '__main__':
