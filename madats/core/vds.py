@@ -48,6 +48,7 @@ class VirtualDataObject(object):
 
         self.copy_to = []
         self.copy_from = None
+        self.is_temporary = False
         
     @property
     def storage_id(self):
@@ -67,10 +68,22 @@ class VirtualDataObject(object):
 
     @producers.setter
     def producers(self, tasks):
+        self._producers = []
         if type(tasks) == list:
-            self._producers = tasks
+            for task in tasks:
+                if isinstance(task, Task):
+                    if task not in self._producers:
+                        self._producers.append(task)
+                else:
+                    print("Invalid task type")
+                    sys.exit()
         else:
-            self._producers = [tasks]
+            if isinstance(tasks, Task):
+                if tasks not in self._producers:
+                    self._producers = [tasks]
+            else:
+                print("Invalid task type")
+                sys.exit()
 
     @property
     def consumers(self):
@@ -78,10 +91,23 @@ class VirtualDataObject(object):
 
     @consumers.setter
     def consumers(self, tasks):
+        self._consumers = []
         if type(tasks) == list:
-            self._consumers = tasks
+            for task in tasks:
+                if isinstance(task, Task):
+                    if task not in self._consumers:
+                        self._consumers.append(task)
+                else:
+                    print("Invalid task type")
+                    sys.exit()
         else:
-            self._consumers = [tasks]
+            if isinstance(tasks, Task):
+                if tasks not in self._consumers:
+                    self._consumers = [tasks]
+            else:
+                print("Invalid task type")
+                sys.exit()
+
 
     @property
     def size(self):
@@ -138,10 +164,20 @@ class VirtualDataObject(object):
         self._qos = qos
 
     def add_consumer(self, task):
-        self._consumers.append(task)
+        if isinstance(task, Task):
+            if task not in self._consumers:
+                self._consumers.append(task)
+        else:
+            print("Invalid task type")
+            sys.exit()
 
     def add_producer(self, task):
-        self._producers.append(task)
+        if isinstance(task, Task):
+            if task not in self._producers:
+                self._producers.append(task)
+        else:
+            print("Invalid task type")
+            sys.exit()
 
     def __set_default_size__(self):
         size = 0
@@ -179,29 +215,18 @@ class VirtualDataSpace():
     """
     def __init__(self):
         self.__vdo_dict__ = {}
-        self.__task_dict__ = {}
         self._vdos = []
-        self._tasks = []
         self.datapaths = {}
         self._data_management_policy = Policy.NONE
         self._storage_tiers = {}
-    
+        self.__datatasks__ = {}
+        self._auto_cleanup = False
+
     @property
     def vdos(self):
         return self._vdos
 
-    @property
-    def tasks(self):
-        return self._tasks
-
-#    '''
-#    creates a Task in the VDS
-#    '''
-#    def create_task(self, command):
-#        task = Task(command, type)
-#        self._tasks.append(task)
-#        return task
-
+    ### Basic Operations ###
     '''
     maps a datapath to a VDO: creates and adds a VDO in the VDS
     '''
@@ -220,44 +245,29 @@ class VirtualDataSpace():
     adds a VDS object (task/VDO) to the VDS
     '''
     def add(self, vds_obj):
-        if type(vds_obj) == Task or type(vds_obj) == DataTask:
-            self.__add_task__(vds_obj)
-        elif type(vds_obj) == VirtualDataObject:
+        obj_type = type(vds_obj)
+        if obj_type == VirtualDataObject:
             self.__add_vdo__(vds_obj)
         else:
-            print('Invalid object type {}. VDS objects can be only {} or {}'.format(obj_type,
-                                                                                    Task.__name__,
-                                                                                    VirtualDataObject.__name__))
+            print('Invalid object type {}. VDS can only contain virtual data objects'.format(obj_type))
+            return
 
-
-    '''
-    adds a task to the VDS 
-    '''
-    def __add_task__(self, task):
-        if not self.task_exists(task.__id__):
-            self._tasks.append(task)
-            for input in task.inputs:
-                if type(input) == VirtualDataObject:
-                    self.__add_vdo__(input)
-
-            for output in task.outputs:
-                if type(output) == VirtualDataObject:
-                    self.__add_vdo__(output)
-        
 
     '''
     adds a VDO to the VDS 
     '''
     def __add_vdo__(self, vdo):
         # only add vdo when it's not already in vds
-        if not self.vdo_exists(vdo.__id__):
+        if self.vdo_exists(vdo.__id__):
+            print("Virtual data object for {} already exists".format(vdo.abspath))
+        else:
             self.vdos.append(vdo)
             self.datapaths[vdo.abspath] = vdo
             self.__vdo_dict__[vdo.__id__] = vdo
 
 
     '''
-    copies a VDO to another VDO in the VDS
+    copies a VDO to another VDO in the VDS: copies all associated attributes and associations
     '''
     def copy(self, vdo_src, dest_id):
         relative_path = vdo_src.relative_path
@@ -274,6 +284,25 @@ class VirtualDataSpace():
         self.__vdo_dict__[vdo_id] = vdo
         return vdo
 
+
+    '''
+    replaces a VDO with another VDO
+    '''
+    def replace(self, vdo_src, vdo_dest):
+        for task in vdo_dest.consumers:
+            params = task.params
+            for i in range(len(params)):
+                if task.params[i] == vdo_src:
+                    task.params[i] = vdo_dest            
+        for task in vdo_dest.producers:
+            params = task.params
+            for i in range(len(params)):
+                if task.params[i] == vdo_src:
+                    task.params[i] = vdo_dest            
+        print('Changing datapath from {} to {}'.format(vdo_src.abspath, vdo_dest.abspath))
+        self.delete(vdo_src)
+
+
     '''
     deletes a VDO from the VDS
     '''
@@ -281,24 +310,6 @@ class VirtualDataSpace():
         del self.__vdo_dict__[vdo.__id__]
         self._vdos.remove(vdo)
 
-    '''
-    retrieve one
-    '''
-    def get_vdo(self, vdo_id):
-        if vdo_id in self.__vdo_dict__:
-            return self.__vdo_dict__[vdo_id]
-        else:
-            print("VDO ({}) does not exist!".format(vdo_id))
-            return None
-
-    '''
-    retrieve all
-    '''
-    '''
-    def get_vdo_list(self):
-        vdo_list = [self.__vdo_dict__[id] for id in self.__vdo_dict__]
-        return vdo_list
-    '''
 
     '''
     check for a VDO
@@ -309,15 +320,7 @@ class VirtualDataSpace():
         else:
             return False
 
-    '''
-    check for a task
-    '''
-    def task_exists(self, task_id):
-        if task_id in self.__task_dict__:
-            return True
-        else:
-            return False
-
+    ### Data Management Operations ###
     """
     creates a data task to move a virtual data object to a different storage layer(s)
     """
@@ -339,13 +342,14 @@ class VirtualDataSpace():
             if vdo_src.storage_id != 'archive' and storage.is_same(vdo_src.abspath, vdo_dest.abspath):
                 print("No data movement necessary, {} == {}".format(vdo_src.abspath, vdo_dest.abspath))
                 self.replace(vdo_src, vdo_dest)
+                vdo_dest.is_temporary = True
                 return
 
             """
             check the datatask-id and create a datatask
             """
             dt_id = self.__get_datatask_id__(vdo_src, vdo_dest)            
-            if self.task_exists(dt_id):
+            if self.__datatask_exists__(dt_id):
                 print('Data task ({}) already exists'.format(dt_id))
                 return
             else:
@@ -355,18 +359,18 @@ class VirtualDataSpace():
             update the I/O parameters if data is moved
             """
             for task in vdo_dest.consumers:
-                params = task.inputs
+                params = task.params
                 for i in range(len(params)):
-                    if task.inputs[i] == vdo_src:
-                        task.inputs[i] = vdo_dest
+                    if task.params[i] == vdo_src:
+                        task.params[i] = vdo_dest
             for task in vdo_dest.producers:
-                params = task.inputs
+                params = task.params
                 for i in range(len(params)):
-                    if task.inputs[i] == vdo_src:
-                        task.inputs[i] = vdo_dest
+                    if task.params[i] == vdo_src:
+                        task.params[i] = vdo_dest
 
             data_task = DataTask(dt_id, vdo_src, vdo_dest, **kwargs)
-            self.__add_task__(data_task)
+            self.__datatasks__[dt_id] = data_task
             """
             - data stagein task becomes the consumer of the original data
             - data stagein task becomes the producer of the new data
@@ -383,10 +387,11 @@ class VirtualDataSpace():
             if vdo_src.storage_id != 'archive' and storage.is_same(vdo_src.abspath, vdo_dest.abspath):
                 print("No data movement necessary, {} == {}".format(vdo_src.abspath, vdo_dest.abspath))
                 self.replace(vdo_src, vdo_dest)
+                vdo_dest.is_temporary = True
                 return
 
             dt_id = self.__get_datatask_id__(vdo_src, vdo_dest)            
-            if self.task_exists(dt_id):
+            if self.__datatask_exists__(dt_id):
                 print('Data task ({}) already exists'.format(dt))
                 return
             else:
@@ -396,57 +401,68 @@ class VirtualDataSpace():
             update the I/O paramters to use the moved data
             """
             for task in vdo_src.consumers:
-                params = task.inputs
+                params = task.params
                 for i in range(len(params)):
-                    if task.inputs[i] == vdo_src:
-                        task.inputs[i] = vdo_dest
+                    if task.params[i] == vdo_src:
+                        task.params[i] = vdo_dest
             for task in vdo_src.producers:
-                params = task.inputs
+                params = task.params
                 for i in range(len(params)):
-                    if task.inputs[i] == vdo_src:
-                        task.inputs[i] = vdo_dest
+                    if task.params[i] == vdo_src:
+                        task.params[i] = vdo_dest
 
             """
             create a data task and add it to the respective VDOs
             """
             data_task = DataTask(dt_id, vdo_dest, vdo_src, **kwargs)
-            self.__add_task__(data_task)
+            self.__datatasks__[dt_id] = data_task
             
             vdo_dest.producers = [data_task]        
             vdo_src.consumers.append(data_task)
             vdo_dest.consumers = []
         # for non-persistent intermediate data
         else:
-            for task in vdo_dest.consumers:
-                params = task.inputs
-                for i in range(len(params)):
-                    if task.inputs[i] == vdo_src:
-                        task.inputs[i] = vdo_dest            
-            for task in vdo_dest.producers:
-                params = task.inputs
-                for i in range(len(params)):
-                    if task.inputs[i] == vdo_src:
-                        task.inputs[i] = vdo_dest            
-            print('Changing datapath from {} to {}'.format(src_data, dest_data))
-            self.delete(vdo_src)
+            self.replace(vdo_src, vdo_dest)
+        '''
+        setting vdo type to temporary because this VDO is created as part of a data-task
+        and hence, the actual physical data may not be persisted (depends on the VDO properties)
+        '''
+        vdo_dest.is_temporary = True
 
 
     '''
+    cleanup task that automatically removes unused data mapped to a VDO
     '''
-    def replace(self, vdo_src, vdo_dest):
-        for task in vdo_dest.consumers:
-            params = task.inputs
-            for i in range(len(params)):
-                if task.inputs[i] == vdo_src:
-                    task.inputs[i] = vdo_dest            
-        for task in vdo_dest.producers:
-            params = task.inputs
-            for i in range(len(params)):
-                if task.inputs[i] == vdo_src:
-                    task.inputs[i] = vdo_dest            
-        print('Changing datapath from {} to {}'.format(vdo_src.abspath, vdo_dest.abspath))
-        self.delete(vdo_src)
+    def create_cleanup_task(self, vdo):
+        if not vdo.persist and vdo.is_temporary:
+            dummy_vdo_path = vdo.abspath + '.deleted'
+            dummy_vdo = self.map(dummy_vdo_path)
+            for consumer in vdo.consumers:
+                dummy_vdo.add_producer(consumer)
+            
+            cleanup_task = CleanupTask(vdo)
+            dummy_vdo.add_consumer(cleanup_task)
 
+
+    '''
+    setup auto cleanup
+    '''
+    @property
+    def auto_cleanup(self):
+        return self._auto_cleanup
+
+    @auto_cleanup.setter
+    def auto_cleanup(self, auto_cleanup):
+        self._auto_cleanup = auto_cleanup
+
+    '''
+    check for a data task
+    '''
+    def __datatask_exists__(self, datatask_id):
+        if datatask_id in self.__datatasks__:
+            return True
+        else:
+            return False
 
     '''
     calculate data-task id based on the src and dest data
@@ -473,14 +489,16 @@ class VirtualDataSpace():
 class Task(object):
     """
     A workflow task object that corresponds to a single stage/step/task/job in the workflow
+    - A task can only have a command, parameters (params) and attributes
+    - Since VDS' model is data-centric, there is no input/output to a task, but only params
+    - However, VDOs have producers and consumers that help VDS to build the dependencies
     """
 
     def __init__(self, command, type=TaskType.COMPUTE):
         self.__id__  = str(uuid.uuid4())
         self._name = self.__id__
         self._command = command
-        self._inputs = []
-        self._outputs = []
+        self._params = []
         self._expected_runtime = UNKNOWN
         self._priority = UNKNOWN
         self.predecessors = []
@@ -509,26 +527,23 @@ class Task(object):
         self._command = command
 
     @property
-    def inputs(self):
-        return self._inputs
+    def params(self):
+        return self._params
 
-    @inputs.setter
-    def inputs(self, inputs):
-        self._inputs = inputs
-        for input in inputs:
-            if isinstance(input, VirtualDataObject):
-                input.add_consumer(self)
+    @params.setter
+    def params(self, params):
+        self._params = params
 
-    @property
-    def outputs(self):
-        return self._outputs
+#    @property
+#    def outputs(self):
+#        return self._outputs
 
-    @outputs.setter
-    def outputs(self, outputs):
-        self._outputs = outputs
-        for output in outputs:
-            if isinstance(output, VirtualDataObject):
-                output.add_producer(self)
+#    @outputs.setter
+#    def outputs(self, outputs):
+#        self._outputs = outputs
+#        for output in outputs:
+#            if isinstance(output, VirtualDataObject):
+#                output.add_producer(self)
 
     @property
     def runtime(self):
@@ -603,10 +618,7 @@ class DataTask(Task):
     def __init__(self, id, vdo_src, vdo_dest):
         Task.__init__(self, command='', type=TaskType.DATA)        
         self.__id__ = id
-        self.vdo_src = vdo_src
-        self.vdo_dest = vdo_dest
-        self.inputs = [vdo_src, vdo_dest]
-        self.outputs = [vdo_dest]
+        self.params = [vdo_src, vdo_dest]
         self.command = self.__set_data_mover__(vdo_src, vdo_dest)
 
 
@@ -615,7 +627,7 @@ class DataTask(Task):
 
 
     """
-    an abstract data mover that copies data based on the storage tier
+    data mover that copies data based on the storage tier
     """
     def __set_data_mover__(self, vdo_src, vdo_dest):
         # the default data mover is 'cp', however, it
@@ -637,3 +649,14 @@ class DataTask(Task):
 
         return command
         
+##########################################################################
+class CleanupTask(Task):
+    """
+    A datatask that is specifically marked to move data objects between storage tiers.
+    This is the 
+    """
+
+    def __init__(self, vdo):
+        Task.__init__(self, command='rm -rRf ', type=TaskType.CLEANUP)        
+        self.params = [vdo]
+

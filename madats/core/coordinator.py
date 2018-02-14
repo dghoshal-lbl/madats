@@ -94,6 +94,11 @@ def manage(vds, execute_mode=ExecutionMode.DAG):
     elif policy == Policy.STORAGE_AWARE:
         data_manager.dm_storage_aware(vds)
 
+    if vds.auto_cleanup:
+        vdos = vds.vdos
+        for vdo in vdos:
+            vds.create_cleanup_task(vdo)
+
     dag = {}
     for vdo in vds.vdos:
         for prod in vdo.producers:

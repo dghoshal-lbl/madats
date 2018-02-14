@@ -23,6 +23,14 @@ class TaskType(object):
 
     COMPUTE = 0
     DATA = 1
+    CLEANUP = 2
+
+    name_dict = {COMPUTE: 'Compute', DATA: 'Data', CLEANUP: 'Cleanup'}
+
+    @staticmethod
+    def name(type):
+        return TaskType.name_dict.get(type, None)
+
 
 class ExecutionMode(object):
     """

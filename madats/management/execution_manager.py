@@ -24,7 +24,7 @@ except:
     import queue
 import subprocess
 import uuid
-from madats.utils.constants import ExecutionMode
+from madats.utils.constants import ExecutionMode, TaskType
 
 result_list = []
 taskmap = {}
@@ -57,9 +57,9 @@ def worker(taskq):
             '''
             submit the task
             '''
-            print("[Workflow-{}] Submitted task-{}".format(_workflow_id, task.__id__))
+            print("[Workflow-{}] Submitted {} task-{}".format(_workflow_id, TaskType.name(task.type), task.__id__))
             result = submit(job_script, task.scheduler)
-            print("[Workflow-{}] Finished task-{}".format(_workflow_id, task.__id__))
+            print("[Workflow-{}] Finished {} task-{}".format(_workflow_id, TaskType.name(task.type), task.__id__))
             
             '''
             once the task completes, notify the dependents
@@ -116,11 +116,11 @@ def generate_script(task):
     command = task.command
     #param_list = [str(p) for p in task.params]
     param_list = []
-    for input in task.inputs:
-        if isinstance(input, VirtualDataObject):
-            param_list.append(input.abspath)
+    for param in task.params:
+        if isinstance(param, VirtualDataObject):
+            param_list.append(param.abspath)
         else:
-            param_list.append(input)
+            param_list.append(param)
 
     params = " ".join(param_list)    
     script_name = task.__id__ + '.sub'
