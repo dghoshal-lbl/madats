@@ -45,7 +45,7 @@ class PropertyConfig():
             sys.exit()
 
         config_file = os.path.expandvars('$MADATS_HOME/config/config.cfg')
-        print('Reading config file: {}'.format(config_file))
+        #print('Reading config file: {}'.format(config_file))
         config = Config(config_file)
         self._short_term = config.get('persistence', 'shortterm')
         self._long_term = config.get('persistence', 'longterm')
@@ -85,7 +85,7 @@ class SchedulerConfig():
         config_dir = os.path.expandvars('$MADATS_HOME/config')
         config_file = scheduler+'.cfg'
         config_file = os.path.join(config_dir, config_file)
-        print('Reading config file: {}'.format(config_file))
+        #print('Reading config file: {}'.format(config_file))
         config = Config(config_file)
 
         self._submit = self._command_(config, 'submit')

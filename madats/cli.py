@@ -10,9 +10,7 @@ def execute(args):
     policy = Policy.type(args.policy)
 
     vds = coordinator.map(workflow, language, policy)
-    #coordinator.plan(vds)
     coordinator.manage(vds, mode)
-    #coordinator.destroy(vds)
 
 def main():
     parser = argparse.ArgumentParser(description="",

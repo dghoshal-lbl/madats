@@ -20,7 +20,7 @@ import filecmp
 class StorageHierarchy(object):
     def __init__(self):
         storage_config = os.path.expandvars('$MADATS_HOME/config/storage.yaml')
-        print('Reading storage config: {}'.format(storage_config))                
+        #print('Reading storage config: {}'.format(storage_config))                
         self._hierarchy = self.parse(storage_config)
         self._mount_points = {}
         for k,v in self._hierarchy.items():

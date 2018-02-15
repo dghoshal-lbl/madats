@@ -231,13 +231,14 @@ class VirtualDataSpace():
     maps a datapath to a VDO: creates and adds a VDO in the VDS
     '''
     def map(self, datapath):
-        if datapath in self.datapaths:
-            return self.datapaths[datapath]
+        abspath = os.path.abspath(datapath)
+        if abspath in self.datapaths:
+            return self.datapaths[abspath]
 
-        vdo = VirtualDataObject(datapath)
+        vdo = VirtualDataObject(abspath)
         self.vdos.append(vdo)
-        self.datapaths[datapath] = vdo
-        vdo_id = storage.get_data_id(datapath) 
+        self.datapaths[abspath] = vdo
+        vdo_id = storage.get_data_id(abspath) 
         self.__vdo_dict__[vdo_id] = vdo
         return vdo
 
@@ -281,7 +282,7 @@ class VirtualDataSpace():
         vdo.copy_from = vdo_src
         vdo.consumers = [cons for cons in vdo_src.consumers]
         vdo.producers = [prod for prod in vdo_src.producers]
-        self.__vdo_dict__[vdo_id] = vdo
+        #self.__vdo_dict__[vdo_id] = vdo
         return vdo
 
 
@@ -484,6 +485,30 @@ class VirtualDataSpace():
         self._data_management_policy = policy
 
 
+    """
+    returns a task view of the VDS
+    """
+    def get_task_dag(self):
+        dag = {}
+        for vdo in self.vdos:
+            for prod in vdo.producers:
+                if prod not in dag:
+                    dag[prod] = []
+                for cons in vdo.consumers:
+                    '''
+                    - add the dependencies for each task
+                    - avoid self-dependencies to avoid deadlock  
+                    '''
+                    if cons not in dag[prod] and cons != prod:
+                        dag[prod].append(cons)
+                        cons.add_predecessor(prod)
+                        prod.add_successor(cons)
+
+            for con in vdo.consumers:
+                if con not in dag:
+                    dag[con] = []
+        return dag
+
 ##############################################################################
 
 class Task(object):
@@ -590,10 +615,12 @@ class Task(object):
         self._postrun = postrun
 
     def add_predecessor(self, t):
-        self.predecessors.append(t)
+        if t not in self.predecessors:
+            self.predecessors.append(t)
 
     def add_successor(self, t):
-        self.successors.append(t)
+        if t not in self.successors:
+            self.successors.append(t)
     
     @property
     def scheduler_opts(self):

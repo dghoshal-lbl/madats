@@ -5,10 +5,12 @@ task1:
     - -i
     - file1
     - file2
-  inputs:
+    - -o
+    - int1
+  vin:
     - file1
     - file2
-  outputs:
+  vout:
     - int1
   scheduler: slurm
   queue_config:
@@ -20,12 +22,11 @@ task2:
   command: python
   params:
     - test2.py
-    - -i
     - int1
-  inputs:
+    - out2
+  vin:
     - int1
-    - file2
-  outputs:
+  vout:
     - out2
   scheduler: pbs
   queue_config:

@@ -46,23 +46,8 @@ Coordinates the movement of data between multiple storage tiers through VDS (man
 given a workflow, map it to VDS
 """
 def map(workflow, language='yaml', policy=Policy.NONE):
-    if language == 'yaml':
-        task_list, input_map = workflow_manager.parse_yaml(workflow)
-    else:
-        print('Invalid workflow description language {}'.format(language))
-        sys.exit()
-    vds = VirtualDataSpace()
+    vds = workflow_manager.parse(workflow, language)
     vds.data_management_policy = policy
-    for task in task_list:
-        vds.add(task)
-        #__map2vds__(vds, task)
-    
-    '''
-    for vdo in vds.vdos:
-        prods = [prod.params for prod in vdo.producers]
-        conss = [cons.params for cons in vdo.consumers]
-        print("{} {} {}".format(vdo.abspath, prods, conss))
-    '''
     return vds
 
 

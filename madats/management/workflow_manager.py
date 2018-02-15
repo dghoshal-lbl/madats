@@ -11,10 +11,13 @@
 
 """
 
+## TODO: revisit this later: have make the inputs and outputs as VDOs
+
 import yaml
 from madats.core.vds import Task
 from madats.core.scheduler import Scheduler
 from madats.management import execution_manager
+from madats.core.vds import VirtualDataSpace 
 import sys
 
 """
@@ -24,6 +27,7 @@ def parse_yaml(workflow):
     task_list = []
     input_map = {}
     idx = 0
+    vds = VirtualDataSpace()
     try:
         with open(workflow, 'r') as wf:
             tasks = yaml.load(wf)
@@ -40,67 +44,40 @@ def parse_yaml(workflow):
                     task.name = info['name']
                 else:
                     task.name = 'task' + str(idx)
-                if 'inputs' in info:
-                    task.inputs = info['inputs']
-                if 'outputs' in info:
-                    task.outputs = info['outputs']
+                param_vdo_map = {}
+                if 'vin' in info:
+                    for input in info['vin']:
+                        vdo = vds.map(input)
+                        vdo.add_consumer(task)
+                        param_vdo_map[input] = vdo
+                if 'vout' in info:
+                    for output in info['vout']:
+                        vdo = vds.map(output)
+                        vdo.add_producer(task)
+                        param_vdo_map[output] = vdo
                 if 'params' in info:
-                    task.params = info['params']
+                    for param in info['params']:
+                        if param in param_vdo_map:
+                            task.params.append(param_vdo_map[param])
+                        else:
+                            task.params.append(param)
                 if 'scheduler' in info:
                     task.scheduler = Scheduler.type(info['scheduler'])
                 if task.scheduler != Scheduler.NONE:
                     task.scheduler_opts = info['queue_config']
-                for input in task.inputs:
-                    if input not in input_map:
-                        input_map[input] = []
-                    input_map[input].append(task)
-                task_list.append(task)
                 idx += 1
-        return task_list, input_map
+        return vds
     except yaml.YAMLError as e:
         print(e)
 
 
 """
-build a DAG from the list of workflow tasks
-"""
-def build_dag(task_list, input_map):
-    dag = {}
-    for task in task_list:
-        dag[task] = []
-        outputs = task.outputs
-        for output in outputs:
-            if output in input_map:
-                successors = input_map[output]
-                for succ in successors:
-                    dag[task].append(succ)
-                    succ.add_predecessor(task)
-                    task.add_successor(succ)
-        
-    #for task in task_list:
-    #    preds = [pred.name for pred in task.predecessors]
-    #    succs = [succ.name for succ in task.successors]
-
-    return dag
-            
-
-"""
-"""
-def dagify(task_list):
-    input_map = {}
-    for task in task_list:
-        for input in task.inputs:
-            if input not in input_map:
-                input_map[input] = []
-            input_map[input].append(task)
-    
-    dag = build_dag(task_list, input_map)
-    return dag
-
-"""
 display a workflow DAG
 """
 def display(dag):
+    print("-------------------------")
+    print("{Node: Successor} view")
+    print("-------------------------")
     for v in dag:
         successor_list = dag[v]
         id_list = [s.name for s in successor_list]
@@ -108,12 +85,16 @@ def display(dag):
         print("{} : {}".format(v.name, successors))
 
     print("-------------------------")
+    print("{Node: Predecessor} view")
+    print("-------------------------")
 
     for v in dag:
         id_list = [p.name for p in v.predecessors]
         preds = " ".join(id_list)
         print("{} : {}".format(v.name, preds))
 
+    print("-------------------------")
+    print("{Node: Successor} view")
     print("-------------------------")
 
     for v in dag:
@@ -129,9 +110,8 @@ Translate a YAML workflow description into a generic workflow DAG
 """
 def parse(workflow, language='yaml'):
     if language == 'yaml':
-        task_list, input_map = parse_yaml(workflow)
-        dag = build_dag(task_list, input_map)
-        return dag
+        vds = parse_yaml(workflow)
+        return vds
     else:
         print('Invalid workflow description language {}'.format(language))
         sys.exit()
@@ -143,5 +123,5 @@ if __name__ == '__main__':
         sys.exit(-1)
 
     workflow = sys.argv[1]
-    dag = parse(workflow)
-    display(dag)
+    vds = parse(workflow)
+    display(vds.get_task_dag())
