@@ -24,51 +24,54 @@ import sys
 Parse workflows described in YAML 
 """
 def parse_yaml(workflow):
-    task_list = []
-    input_map = {}
-    idx = 0
-    vds = VirtualDataSpace()
     try:
         with open(workflow, 'r') as wf:
             tasks = yaml.load(wf)
-            for t in tasks:
-                info = tasks[t]
-                command = ''
-                if 'command' in info:
-                    command = info['command']
-                else:
-                    print("'command' missing in task description!")
-                    sys.exit()
-                task = Task(command)
-                if 'name' in info:
-                    task.name = info['name']
-                else:
-                    task.name = 'task' + str(idx)
-                param_vdo_map = {}
-                if 'vin' in info:
-                    for input in info['vin']:
-                        vdo = vds.map(input)
-                        vdo.add_consumer(task)
-                        param_vdo_map[input] = vdo
-                if 'vout' in info:
-                    for output in info['vout']:
-                        vdo = vds.map(output)
-                        vdo.add_producer(task)
-                        param_vdo_map[output] = vdo
-                if 'params' in info:
-                    for param in info['params']:
-                        if param in param_vdo_map:
-                            task.params.append(param_vdo_map[param])
-                        else:
-                            task.params.append(param)
-                if 'scheduler' in info:
-                    task.scheduler = Scheduler.type(info['scheduler'])
-                if task.scheduler != Scheduler.NONE:
-                    task.scheduler_opts = info['queue_config']
-                idx += 1
-        return vds
+            vds = parse_tasks(tasks)
+            return vds
     except yaml.YAMLError as e:
         print(e)
+
+
+def parse_tasks(tasks):
+    idx = 0
+    vds = VirtualDataSpace()
+    for t in tasks:
+        info = tasks[t]
+        command = ''
+        if 'command' in info:
+            command = info['command']
+        else:
+            print("'command' missing in task description!")
+            sys.exit()
+        task = Task(command)
+        if 'name' in info:
+            task.name = info['name']
+        else:
+            task.name = 'task' + str(idx)
+        param_vdo_map = {}
+        if 'vin' in info:
+            for input in info['vin']:
+                vdo = vds.map(input)
+                vdo.add_consumer(task)
+                param_vdo_map[input] = vdo
+        if 'vout' in info:
+            for output in info['vout']:
+                vdo = vds.map(output)
+                vdo.add_producer(task)
+                param_vdo_map[output] = vdo
+        if 'params' in info:
+            for param in info['params']:
+                if param in param_vdo_map:
+                    task.params.append(param_vdo_map[param])
+                else:
+                    task.params.append(param)
+        if 'scheduler' in info:
+            task.scheduler = Scheduler.type(info['scheduler'])
+        if task.scheduler != Scheduler.NONE:
+            task.scheduler_opts = info['queue_config']
+        idx += 1
+    return vds
 
 
 """
@@ -111,6 +114,9 @@ Translate a YAML workflow description into a generic workflow DAG
 def parse(workflow, language='yaml'):
     if language == 'yaml':
         vds = parse_yaml(workflow)
+        return vds
+    elif language == 'DictObj':
+        vds = parse_tasks(workflow)
         return vds
     else:
         print('Invalid workflow description language {}'.format(language))

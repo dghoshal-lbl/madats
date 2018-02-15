@@ -7,8 +7,8 @@ def example():
     for i in range(num_tasks):
         task = 'task' + str(i)
         workflow[task] = {}
-        workflow[task]['inputs'] = ['/scratch/data' + str(i-1)]
-        workflow[task]['outputs'] = ['/scratch/data' + str(i)]
+        workflow[task]['vin'] = ['/scratch/data' + str(i-1)]
+        workflow[task]['vout'] = ['/scratch/data' + str(i)]
         workflow[task]['params'] = ['/scratch/data' + str(i-1), '/scratch/data' + str(i)]
         workflow[task]['command'] = 'cmd' + str(i)
         workflow[task]['partition'] = 'debug'
@@ -18,11 +18,8 @@ def example():
     policies = ['WFA', 'STA', 'PASSIVE']
     for policy in policies:
         print("****** Policy: {} ******".format(policy))
-        vds = madats.create()
-        madats.map(vds, workflow)
-        madats.plan(vds, policy)
+        vds = madats.map(workflow, language='DictObj', policy=policy)
         madats.manage(vds)
-        madats.destroy(vds)
     
 if __name__ == '__main__':
     example()
