@@ -45,10 +45,11 @@ class VirtualDataObject(object):
         self._deadline = 0 # epoch_time_in_ms
         self._destination = ''
         self._qos = {} 
+        self._non_movable = False # if the vdo is non-movable, then the data management strategy will not affect its location
 
         self.copy_to = []
         self.copy_from = None
-        self.is_temporary = False
+        self.__is_temporary__ = False # if the vdo is temporary, then auto-cleanup will remove the data
         
     @property
     def storage_id(self):
@@ -162,6 +163,14 @@ class VirtualDataObject(object):
     @qos.setter
     def qos(self, **qos):
         self._qos = qos
+
+    @property
+    def non_movable(self):
+        return self._non_movable
+
+    @non_movable.setter
+    def non_movable(self, non_movable):
+        self._non_movable = non_movable
 
     def add_consumer(self, task):
         if isinstance(task, Task):
@@ -326,6 +335,10 @@ class VirtualDataSpace():
     creates a data task to move a virtual data object to a different storage layer(s)
     """
     def create_data_task(self, vdo_src, vdo_dest, **kwargs):
+        # if the vdo is not movable, then no data task is needed
+        if vdo_src.non_movable:
+            return
+
         if not self.vdo_exists(vdo_src.__id__):
             self.__add_vdo__(vdo_src)
         if not self.vdo_exists(vdo_dest.__id__):
@@ -343,7 +356,7 @@ class VirtualDataSpace():
             if vdo_src.storage_id != 'archive' and storage.is_same(vdo_src.abspath, vdo_dest.abspath):
                 print("No data movement necessary, {} == {}".format(vdo_src.abspath, vdo_dest.abspath))
                 self.replace(vdo_src, vdo_dest)
-                vdo_dest.is_temporary = True
+                vdo_dest.__is_temporary__ = True
                 return
 
             """
@@ -388,7 +401,7 @@ class VirtualDataSpace():
             if vdo_src.storage_id != 'archive' and storage.is_same(vdo_src.abspath, vdo_dest.abspath):
                 print("No data movement necessary, {} == {}".format(vdo_src.abspath, vdo_dest.abspath))
                 self.replace(vdo_src, vdo_dest)
-                vdo_dest.is_temporary = True
+                vdo_dest.__is_temporary__ = True
                 return
 
             dt_id = self.__get_datatask_id__(vdo_src, vdo_dest)            
@@ -428,14 +441,14 @@ class VirtualDataSpace():
         setting vdo type to temporary because this VDO is created as part of a data-task
         and hence, the actual physical data may not be persisted (depends on the VDO properties)
         '''
-        vdo_dest.is_temporary = True
+        vdo_dest.__is_temporary__ = True
 
 
     '''
     cleanup task that automatically removes unused data mapped to a VDO
     '''
     def create_cleanup_task(self, vdo):
-        if not vdo.persist and vdo.is_temporary:
+        if not vdo.persist and vdo.__is_temporary__:
             dummy_vdo_path = vdo.abspath + '.deleted'
             dummy_vdo = self.map(dummy_vdo_path)
             for consumer in vdo.consumers:
