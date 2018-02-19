@@ -122,6 +122,10 @@ class VirtualDataObject(object):
     def persist(self):
         return self._persist
 
+    #@persist.setter
+    #def persist(self, persist):
+    #    self._persist = persist
+
     @property
     def persistence(self):
         return self._persistence
@@ -230,6 +234,11 @@ class VirtualDataSpace():
         self._storage_tiers = {}
         self.__datatasks__ = {}
         self._auto_cleanup = False
+
+        # basic for tests, more to be added
+        self.__query_elements__ = {'num_vdos': 0, 'total_tasks': 0,
+                                   'total_compute_tasks': 0, 'total_data_tasks': 0,
+                                   'num_data_movements': 0}
 
     @property
     def vdos(self):
@@ -345,7 +354,7 @@ class VirtualDataSpace():
             self.__add_vdo__(vdo_dest)
         src_data = vdo_src.abspath
         dest_data = vdo_dest.abspath
-        # if staging in data, vdo_src has no producers
+        # if staging in data, vdo_src has no producers: vdo_src -> vdo_dest
         if len(vdo_src.producers) == 0 and len(vdo_src.consumers) > 0:
             """
             if the source is not on archive and is already staged-in with
@@ -392,24 +401,24 @@ class VirtualDataSpace():
             """
             vdo_dest.producers = [data_task]
             vdo_src.consumers = [data_task]
-        # if staging out data, vdo_src has no consumers
+        # if staging out data, vdo_src has no consumers: vdo_src <- vdo_dest
         elif (len(vdo_src.consumers) == 0 and len(vdo_src.producers) > 0) or \
                 (len(vdo_src.consumers) > 0 and len(vdo_src.producers) > 0 and vdo_src.persist == True):
             """
-            stage-out if the output data changed
+            always stage-out the data because the data may be changed when the computation ends
             """
-            if vdo_src.storage_id != 'archive' and storage.is_same(vdo_src.abspath, vdo_dest.abspath):
-                print("No data movement necessary, {} == {}".format(vdo_src.abspath, vdo_dest.abspath))
-                self.replace(vdo_src, vdo_dest)
-                vdo_dest.__is_temporary__ = True
-                return
+            #if vdo_src.storage_id != 'archive' and storage.is_same(vdo_src.abspath, vdo_dest.abspath):
+            #    print("No data movement necessary, {} == {}".format(vdo_src.abspath, vdo_dest.abspath))
+            #    self.replace(vdo_src, vdo_dest)
+            #    vdo_dest.__is_temporary__ = True
+            #    return
 
             dt_id = self.__get_datatask_id__(vdo_src, vdo_dest)            
             if self.__datatask_exists__(dt_id):
                 print('Data task ({}) already exists'.format(dt))
                 return
             else:
-                print('Data stage-out task ({} -> {}) created'.format(src_data, dest_data))
+                print('Data stage-out task ({} -> {}) created'.format(dest_data, src_data))
                 
             """
             update the I/O paramters to use the moved data
@@ -430,13 +439,59 @@ class VirtualDataSpace():
             """
             data_task = DataTask(dt_id, vdo_dest, vdo_src, **kwargs)
             self.__datatasks__[dt_id] = data_task
-            
-            vdo_dest.producers = [data_task]        
-            vdo_src.consumers.append(data_task)
-            vdo_dest.consumers = []
-        # for non-persistent intermediate data
+            '''
+            since vdo_src is where the final output should be while staging out,
+            it's producer is the data task; while all the compute tasks actually
+            write the data through vdo_dest which is then staged out to vdo_src 
+            '''
+            vdo_src.producers = [data_task]        
+            vdo_dest.consumers.append(data_task)
+            vdo_src.consumers = []
+        # for non-persistent intermediate data: vdo_src <-> vdo_dest
         else:
+            if vdo_src.storage_id != 'archive' and storage.is_same(vdo_src.abspath, vdo_dest.abspath):
+                print("No data preparation necessary, {} == {}".format(vdo_src.abspath, vdo_dest.abspath))
+                self.replace(vdo_src, vdo_dest)
+                vdo_dest.__is_temporary__ = True
+                return
+
+            dt_id = self.__get_datatask_id__(vdo_src, vdo_dest)
+            if self.__datatask_exists__(dt_id):
+                print('Data task ({}) already exists'.format(dt))
+                return
+            if not os.path.exists(os.path.dirname(vdo_dest.abspath)):
+                data_task = DataTask(dt_id, vdo_src, vdo_dest, DataTask.PREPARER)
+                '''
+                Pick any one producer task and select the vdo for which it's a consumer.
+                The data preparer task should be that vdo's producer so as to make sure
+                that the data preparer task runs before the `any one producer`.
+                If there is no such vdo for which the producer task is a consumer,
+                then the original vdo (vdo_src) is generated without using any other
+                vdo/data. So, the preparer task needs to be appended before the compute
+                task executes.
+                '''
+                #is_producer_consumer = False
+                #if len(vdo_dest.producers) > 0:
+                #    any_one_producer = vdo_dest.producers[0]
+                #    for vdo in self.vdos:
+                #        if any_one_producer in vdo.consumers:
+                #            vdo.add_producer(data_task)
+                #            is_producer_consumer = True
+                #            break
+                #    if not is_producer_consumer:
+                '''
+                Simpler: just create a dummy vdo that is used to prepare for the datatask
+                - appends the creation of the dummy vdo before the replaced vdo
+                - ensures executing the preparer datatask prior to using the replaced vdo
+                '''
+                dummy_vdo_path = vdo_dest.abspath + '.prepare'
+                dummy_vdo = self.map(dummy_vdo_path)
+                dummy_vdo.add_producer(data_task)
+                for producer in vdo_dest.producers:
+                    dummy_vdo.add_consumer(producer)
+                print('Data preparer task created for data {}'.format(dest_data))
             self.replace(vdo_src, vdo_dest)
+                
         '''
         setting vdo type to temporary because this VDO is created as part of a data-task
         and hence, the actual physical data may not be persisted (depends on the VDO properties)
@@ -449,12 +504,17 @@ class VirtualDataSpace():
     '''
     def create_cleanup_task(self, vdo):
         if not vdo.persist and vdo.__is_temporary__:
+            print("******* Path {} will be removed, Persist: {} ******".format(vdo.abspath, vdo.persist))
             dummy_vdo_path = vdo.abspath + '.deleted'
             dummy_vdo = self.map(dummy_vdo_path)
             for consumer in vdo.consumers:
                 dummy_vdo.add_producer(consumer)
+            for producer in vdo.producers:
+                dummy_vdo.add_producer(producer)
             
-            cleanup_task = CleanupTask(vdo)
+            dt_id = self.__get_datatask_id__(vdo, dummy_vdo)
+            cleanup_task = DataTask(dt_id, vdo, dummy_vdo, DataTask.CLEANER)
+            #cleanup_task = CleanupTask(vdo)
             dummy_vdo.add_consumer(cleanup_task)
 
 
@@ -654,12 +714,22 @@ class DataTask(Task):
     A datatask that is specifically marked to move data objects between storage tiers.
     This is the 
     """
+    PREPARER = 0 # only prepares the target data directory
+    MOVER = 1    # prepares target directories and moves the data
+    CLEANER = 2  # removes used up data
 
-    def __init__(self, id, vdo_src, vdo_dest):
+    def __init__(self, id, vdo_src, vdo_dest, datatask_type=MOVER):
         Task.__init__(self, command='', type=TaskType.DATA)        
         self.__id__ = id
-        self.params = [vdo_src, vdo_dest]
-        self.command = self.__set_data_mover__(vdo_src, vdo_dest)
+        if datatask_type == DataTask.PREPARER:
+            self.params = [os.path.dirname(vdo_dest.abspath)]
+            self.command = "mkdir -p"
+        elif datatask_type == DataTask.MOVER:
+            self.params = [vdo_src, vdo_dest]
+            self.command = self.__set_data_mover__(vdo_src, vdo_dest)
+        elif datatask_type == DataTask.CLEANER:
+            self.params = [vdo_src]
+            self.command = "rm -rRf"
 
 
     def get_datatask_id(self):
@@ -679,13 +749,13 @@ class DataTask(Task):
             # vdo_src and vdo_dest params work in general
             # through the execution manager, which appends
             # the task inputs at the end of the command
-            command = 'mkdir -p {}; cd {}; hsi -q "prompt; mget {}"; ls '.format(dest_dir, vdo_dest.abspath, vdo_src.abspath)
+            command = 'mkdir -p {}; cd {}; hsi -q "prompt; mget {}"; ls'.format(dest_dir, vdo_dest.abspath, vdo_src.abspath)
         elif vdo_dest.storage_id == 'archive':
             src_dir = os.path.dirname(vdo_src.abspath)
             filename = os.path.basename(vdo_dest.abspath)
-            command = 'cd {}; hsi -q "prompt; mkdir -p {}; cd {}; mput {}"; ls '.format(src_dir, dest_dir, dest_dir, filename)
+            command = 'cd {}; hsi -q "prompt; mkdir -p {}; cd {}; mput {}"; ls'.format(src_dir, dest_dir, dest_dir, filename)
         else:
-            command = 'mkdir -p {}; cp -R '.format(dest_directory)
+            command = 'mkdir -p {}; cp -R'.format(dest_directory)
 
         return command
         
@@ -699,4 +769,3 @@ class CleanupTask(Task):
     def __init__(self, vdo):
         Task.__init__(self, command='rm -rRf ', type=TaskType.CLEANUP)        
         self.params = [vdo]
-

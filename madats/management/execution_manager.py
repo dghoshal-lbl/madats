@@ -57,9 +57,19 @@ def worker(taskq):
             '''
             submit the task
             '''
-            print("[Workflow-{}] Submitted {} task-{}".format(_workflow_id, TaskType.name(task.type), task.__id__))
+            #print("[Workflow-{}] Submitted {} task-{}".format(_workflow_id, TaskType.name(task.type), task.__id__))
+            param_list = []
+            for param in task.params:
+                if isinstance(param, VirtualDataObject):
+                    param_list.append(param.abspath)
+                else:
+                    param_list.append(param)
+
+            params = " ".join(param_list)    
+            print("** Submitted: {} {}".format(task.command, params))
             result = submit(job_script, task.scheduler)
-            print("[Workflow-{}] Finished {} task-{}".format(_workflow_id, TaskType.name(task.type), task.__id__))
+            print("** Finished: {} {}".format(task.command, params))
+            #print("[Workflow-{}] Finished {} task-{}".format(_workflow_id, TaskType.name(task.type), task.__id__))
             
             '''
             once the task completes, notify the dependents
