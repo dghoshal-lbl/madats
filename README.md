@@ -36,8 +36,10 @@ To install MaDaTS, do:
 
 TEST
 -----
-To test MaDaTS, do:
+The environment variable `MADATS_HOME` should be set prior to using MaDaTS.
+Hence to test MaDaTS, do:
 
+        source MADATS_HOME
         py.test tests/test_madats.py
 
 
