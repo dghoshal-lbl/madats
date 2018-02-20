@@ -11,7 +11,7 @@
 
 """
 
-from madats.utils.config import property_config, slurm_config, pbs_config
+from madats.utils.config import property_config
 import sys
 
 UNKNOWN = -999

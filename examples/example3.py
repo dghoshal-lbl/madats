@@ -1,36 +1,50 @@
-from random import randint
+'''
+Example-3: 
+     - Describe the workflow through Madats API by mapping
+       datapths to virtual data objects
+     - Specifying some data objects to be non-movable, which
+       prohibits Madats to move the data objects irrespective
+       of the data management strategy
+     - Update config/storage.yaml with the appropriate storage
+       tiers and specify the datadir to make this example work
+'''
+
+from madats import VirtualDataSpace, VirtualDataObject, Task
+from madats import Persistence
+from madats import Policy
+import os
 import madats
 
-def example():
-    workflow = {}
-    num_tasks = randint(2, 5)
-    for i in range(num_tasks):
-        task = 'task' + str(i)
-        workflow[task] = {}
-        workflow[task]['inputs'] = ['/scratch/data' + str(i-1)]
-        workflow[task]['outputs'] = ['/scratch/data' + str(i)]
-        workflow[task]['params'] = ['/scratch/data' + str(i-1), '/scratch/data' + str(i)]
-        workflow[task]['command'] = 'echo ' + str(i)
-        workflow[task]['partition'] = 'debug'
-        workflow[task]['walltime'] = '00:30:00'
-        workflow[task]['cpus'] = 2
+def main():
+    datadir = '/scratch/scratchdirs/cscratch1'
+    # create a VDS
+    vds = VirtualDataSpace()
+    vds.data_management_policy = Policy.STORAGE_AWARE
+    print('Data management policy: {}'.format(Policy.name(vds.data_management_policy)))
 
-    workflow['task0']['inputs'] = ['A:/home/dghoshal/data-1'] 
-    workflow['task0']['params'] = ['A:/home/dghoshal/data-1', '/scratch/data0']
-    #workflow['task0']['inputs'] = ['/archive/data-1'] 
-    #workflow['task0']['params'] = ['/archive/data-1', '/scratch/data0']
-    dataprops = {'/scratch/data0': {'persist': True}}
-    policies = ['PASSIVE']
-    for policy in policies:
-        print("****** Policy: {} ******".format(policy))
-        vds = madats.create()
-        madats.map(vds, workflow, dataprops)
-        madats.plan(vds, policy)
-        #madats.manage(vds, scheduler='slurm', auto_exec=False)
-        #madats.manage(vds, auto_exec=False)
-        madats.manage(vds)
-        madats.destroy(vds)
+    # create VDOs
+    vdo1 = VirtualDataObject(os.path.join(datadir, 'in1'))
+    vdo2 = VirtualDataObject(os.path.join(datadir, 'in2'))
+    vdo2.non_movable = True
+    vdo3 = VirtualDataObject(os.path.join(datadir, 'inout1'))
+
+    # create tasks
+    task = Task(command='cat')
+    task.params = [vdo1, vdo2, '>', vdo3]
+    task1 = Task(command='cat')
+    task1.params = [vdo3]
     
-if __name__ == '__main__':
-    example()
+    # define VDO and task associations
+    vdo1.consumers = [task]
+    vdo2.consumers = [task]
+    vdo3.producers = [task]
+    vdo3.consumers = [task1]
+    vds.add(vdo1)
+    vds.add(vdo2)
+    vds.add(vdo3)
 
+    # manage VDS
+    madats.manage(vds)
+
+if __name__ == '__main__':
+    main()

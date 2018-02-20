@@ -1,37 +1,48 @@
-from random import randint
+'''
+Example-4: 
+     - Describe the workflow through Madats API by mapping
+       datapths to virtual data objects
+     - Specify intermediate data to be persistent
+     - Update config/storage.yaml with the appropriate storage
+       tiers and specify the datadir to make this example work
+'''
+
+from madats import VirtualDataSpace, VirtualDataObject, Task
+from madats import Persistence
+from madats import Policy
+import os
 import madats
 
-def example():
-    policies = ['PASSIVE']
-    for policy in policies:
-        print("****** Policy: {} ******".format(policy))
-        vds = madats.create()
-        vdo1 = madats.vds.VirtualDataObject('/scratch/data0')
-        vdo2 = madats.vds.VirtualDataObject('/scratch/data1')
-        vdo3 = madats.vds.VirtualDataObject('/scratch/data2')
-        task1 = madats.vds.Task()
-        task1.command = 'echo task0'
-        ## either use filesystem data objects
-        task1.add_param('/scratch/data0')
-        task1.add_param('/scratch/data1')
-        task2 = madats.vds.Task()
-        task2.command = 'echo'
-        ## or use virtual data objects
-        task2.add_param('task1')
-        task2.add_param(vdo2)
-        task2.add_param(vdo3)        
-        vdo1.add_consumer(task1)
-        vdo2.add_producer(task1)
-        vdo2.add_consumer(task2)
-        vdo3.add_producer(task2)
-        vdo2.persist(True)
-        vds.add(vdo1)
-        vds.add(vdo2)
-        vds.add(vdo3)
-        madats.plan(vds, policy)
-        madats.manage(vds)
-        madats.destroy(vds)
-    
-if __name__ == '__main__':
-    example()
+def main():
+    datadir = '/scratch/scratchdirs/cscratch1'
+    # create a VDS
+    vds = VirtualDataSpace()
+    vds.data_management_policy = Policy.STORAGE_AWARE
+    print('Data management policy: {}'.format(Policy.name(vds.data_management_policy)))
 
+    # create VDOs
+    vdo1 = VirtualDataObject(os.path.join(datadir, 'in1'))
+    vdo2 = VirtualDataObject(os.path.join(datadir, 'in2'))
+    vdo3 = VirtualDataObject(os.path.join(datadir, 'inout1'))
+    vdo3.persistence = Persistence.LONG_TERM
+
+    # create tasks
+    task = Task(command='cat')
+    task.params = [vdo1, vdo2, '>', vdo3]
+    task1 = Task(command='cat')
+    task1.params = [vdo3]
+    
+    # define VDO and task associations
+    vdo1.consumers = [task]
+    vdo2.consumers = [task]
+    vdo3.producers = [task]
+    vdo3.consumers = [task1]
+    vds.add(vdo1)
+    vds.add(vdo2)
+    vds.add(vdo3)
+
+    # manage VDS
+    madats.manage(vds)
+
+if __name__ == '__main__':
+    main()

@@ -1,94 +1,75 @@
+**************************************************************************
 MaDaTS: Managing Data on Tiered Storage for Scientific Workflows
+
+* Author: Devarshi Ghoshal
+* v1.1.0
+* Created: Oct 25, 2016
+* Updated: Feb 19, 2018
+**************************************************************************
+
 ----------------------------------------------------------------
 
 -![MaDaTS Architecture](docs/figs/madats.png)
 
 MaDaTS provides an integrated data management and workflow execution
-framework. It provides high-level data abstractions through the Virtual
-Data Space (VDS). VDS simplifies the data management across multiple
-storage tiers and file systems during the lifetime of workflow execution.
+framework on multi-tiered storage systems. Users of MaDaTS can execute
+a workflow by either specifying the workflow stages in a YAML description
+file, or use the API to manage the workflow through VDS. Some examples of
+specifying the workflow description and using the API are provided in the
+examples/ directory.
 
-In addition to the workflow descriptions, users can programmatically
-create and manage a VDS, which is a data-centric way of representing
-the workflow and data. The current API supports Python. Below are the
-key functions in the API.
+The MaDaTS API provides simple data abstractions for managing workflow and
+data on multi-tiered storage. It takes a data-driven approach to executing
+workflows, where a workflow is mapped to a Virtual Data Space (VDS) consisting
+of virtual data objects. A user simply creates a VDS and adds virtual data
+objects to the VDS, and MaDaTS takes care of all the necessary data movements
+and bindings to seamlessly manage a workflow and associated data across multiple
+storage tiers.  
 
-The high-level madats functions allow users to manage workflow data
-and tasks on multi-tiered storage hierarchy through a VDS.
+PRE-REQUISITES
+--------------
+* Python (>= 2.7)
+* pip (>= 9.0)
 
-    	madats.VirtualDataSpace()  : creates a VDS
+BUILD
+-----
+To install MaDaTS, do:
 
-        madats.VirtualDataObject() : creates a VDO
+        pip install -r requirements.txt
+        python setup.py install
 
-        madats.Task()		   : creates a task to which the VDO can be associated
+TEST
+-----
+To test MaDaTS, do:
 
-        madats.manage()		   : manages a VDS
+        py.test tests/test_madats.py
 
-
-VDS provides the following functions to create, modify and delete
-virtual data objects and tasks onto VDS.
-
-        vds.add()	: adds a task or a VDO
-
-        vds.copy()	: copies a VDO to another VDO
-
-        vds.replace()	: replaces a VDO from another VDO
-
-        vds.delete()	: deletes a task or a VDO from the VDS
-
-        vds.map()	: maps a datapath to a VDO on VDS
-
-	vds.create_data_task() : creates a data task that moves data between tiers
-
-
-Virtual Data Object is a data abstraction for managing data on multi-tiered
-storage hierarchy.
-
-For defining associations:
-
-        vdo.add_producer()
-
-        vdo.add_consumer()
-
-Attributes:
-
-        vdo.size
-        vdo.persistence
-        vdo.replication
-        vdo.deadline
-        vdo.qos
-
-
-A task and a data-task in a VDS defines an action on one or more VDOs. 
 
 Example
 -------
+In order to manage data and workflow, users need to create virtual data objects
+and tasks, and add them to a Virtual Data Space (VDS). Data and tasks of the
+workflow are managed through MaDaTS by simply calling the `manage` function.
+A simple example is provided below. The examples/ directory contains some more
+examples that describe the different features of MaDaTS.
+
 	import madats
 	
-	# Create a Virtual Data Space
+	# Create a Virtual Data Space (VDS)
 	vds = madats.VirtualDataSpace()
-	# Set up the data management policy for the VDS
-	vds.data_management_policy = madats.Policy.STORAGE_AWARE
 
-	# Create VDOs and associate them with tasks in the VDS
+	# Create Virtual Data Object
 	vdo = madats.VirtualDataObject('/path/to/data')
+
+	# Create a Task
 	task = madats.Task(command='/application/program')
-	task.inputs = ['constant_param', vdo]
+	task.params = ['arg1', 'arg2', vdo]
 
-	# Add the task
-	vds.add(task)
+	# Associate tasks to virtual data objects
+	vdo.producers = [task]
 
-	# Manage data and workflow execution based on the plan 
-	madats.manage(vds, madats.ExecutionMode.DAG)
+	# Add the virtual data object to the VDS
+	vds.add(vdo)
 
-Install
---------
-1. Using Anaconda python  
-      	 conda create -n <env> python   
-	 source activate <env>  
-	 python setup.py install
-
-2. Using virtualenv  
-    	 virtualenv <venv>  
-    	 source <venv>/bin/activate    
-    	 python setup.py install  
+	# Manage data and workflow execution through MaDaTS
+	madats.manage(vds)

@@ -111,6 +111,14 @@ def manage(vds, execute_mode=ExecutionMode.DAG):
 
 
 """
+validate a VDS: validate if the params of a task and the vdo consumer/producer
+list match
+"""
+def validate(vds):
+    pass
+
+
+"""
 query the VDS
 """
 def query(vds, query):

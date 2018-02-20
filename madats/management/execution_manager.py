@@ -25,6 +25,7 @@ except:
 import subprocess
 import uuid
 from madats.utils.constants import ExecutionMode, TaskType
+import shutil
 
 result_list = []
 taskmap = {}
@@ -183,7 +184,7 @@ def dag_execution(dag):
     taskq.join()
     print("[Workflow-{}] Finished execution".format(_workflow_id))
     print("{}".format(result_list))
-
+    #shutil.rmtree(_script_dir)
 
 """
 execute a single task of the workflow

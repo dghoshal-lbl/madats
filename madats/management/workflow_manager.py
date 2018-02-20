@@ -69,7 +69,11 @@ def parse_tasks(tasks):
         if 'scheduler' in info:
             task.scheduler = Scheduler.type(info['scheduler'])
         if task.scheduler != Scheduler.NONE:
-            task.scheduler_opts = info['queue_config']
+            if 'scheduler_opts' in info:
+                task.scheduler_opts = info['scheduler_opts']
+            else:
+                print('No scheduler options provided for task `{}` with scheduler `{}`'.format(task.command, info['scheduler']))
+                sys.exit(1)
         idx += 1
     return vds
 
