@@ -9,11 +9,12 @@ def main():
     # create a VDS
     vds = VirtualDataSpace()
     vds.data_management_policy = Policy.STORAGE_AWARE
-    vds.auto_cleanup = True
+    #vds.auto_cleanup = True
     print('Data management policy: {}'.format(Policy.name(vds.data_management_policy)))
 
     # create VDOs
     vdo = VirtualDataObject('/Users/DGhoshal/workdir/uda/css/testfile')
+    #vdo.non_movable = True
     #vdo.persistence = Persistence.LONG_TERM
     vdo1 = VirtualDataObject('/Users/DGhoshal/workdir/uda/css/intfile')
 
