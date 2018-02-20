@@ -2,12 +2,57 @@
 
 from setuptools import setup, find_packages
 import sys
+import os
+import yaml
 
 python_version = sys.version_info
 
 install_deps = []
 with open('requirements.txt') as file_requirements:
     install_deps = file_requirements.read().splitlines()
+
+def madats_config():
+    print('configuring MaDaTS')
+    if 'MADATS_HOME' in os.environ:
+        pass
+    else:
+        print('Setting MADATS_HOME to {}'.format(os.getcwd()))
+        os.environ['MADATS_HOME'] = os.getcwd()
+    currdir = os.getcwd()
+    workdir = os.path.join(currdir, '_tmp')
+    scratch = os.path.join(workdir, 'scratch')
+    burst = os.path.join(workdir, 'burst')
+    archive = os.path.join(workdir, 'archive')        
+        
+    if not os.path.exists(scratch):
+        os.makedirs(scratch)
+    if not os.path.exists(burst):
+        os.makedirs(burst)
+    if not os.path.exists(archive):
+        os.makedirs(archive)
+
+    __setup_storage_config__(scratch, burst, archive)
+    print('MaDaTS configuration complete')
+        
+
+def __setup_storage_config__(scratch, burst, archive):
+    storage_config = {'system': 'test'}
+    storage_config['test'] = {}
+    storage_tiers = {'scratch': [scratch, 'ShortTerm', 700],
+                     'burst': [burst, 'None', 1600], 
+                     'archive': [archive, 'LongTerm', 1]}
+    for k in storage_tiers:
+        storage_config['test'][k] = {'mount': storage_tiers[k][0],
+                                     'persist': storage_tiers[k][1],
+                                     'bandwidth': storage_tiers[k][2]}
+
+    storage_yaml = os.path.expandvars('$MADATS_HOME/config/storage.yaml')
+    __write_yaml__(storage_config, storage_yaml)
+
+
+def __write_yaml__(data, yaml_file):
+    with open(yaml_file, 'w') as f:
+        yaml.dump(data, f, default_flow_style=False)
 
 setup(name='MaDaTS',
       version='0.1.1',
@@ -31,3 +76,5 @@ setup(name='MaDaTS',
       entry_points={'console_scripts': ['madats = madats.cli:main']},
       #data_files=[('',['setup.py'])]      
 )
+
+madats_config()

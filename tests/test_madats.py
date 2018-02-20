@@ -28,11 +28,11 @@ class Tester():
         else:
             print('MADATS_HOME is not set!')
             sys.exit()
-        currdir = os.getcwd()
-        self.workdir = os.path.join(currdir, '_tmp')
+        madats_home = os.path.expandvars('$MADATS_HOME')
+        self.workdir = os.path.join(madats_home, '_tmp')
         self.scratch = os.path.join(self.workdir, 'scratch')
-        self.burst= os.path.join(self.workdir, 'burst')
-        self.archive= os.path.join(self.workdir, 'archive')        
+        self.burst = os.path.join(self.workdir, 'burst')
+        self.archive = os.path.join(self.workdir, 'archive')        
         
         if not os.path.exists(self.scratch):
             os.makedirs(self.scratch)
@@ -42,7 +42,7 @@ class Tester():
             os.makedirs(self.archive)
 
         self.__setup_storage_config__()
-
+        
 
     def __setup_storage_config__(self):
         storage_config = {'system': 'test'}

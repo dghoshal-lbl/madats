@@ -2,13 +2,13 @@ system: test
 test:
   archive:
     bandwidth: 1
-    mount: /Users/DGhoshal/workdir/uda/css/wfm/tests/_tmp/archive
+    mount: /Users/DGhoshal/workdir/uda/css/wfm/_tmp/archive
     persist: LongTerm
   burst:
     bandwidth: 1600
-    mount: /Users/DGhoshal/workdir/uda/css/wfm/tests/_tmp/burst
+    mount: /Users/DGhoshal/workdir/uda/css/wfm/_tmp/burst
     persist: None
   scratch:
     bandwidth: 700
-    mount: /Users/DGhoshal/workdir/uda/css/wfm/tests/_tmp/scratch
+    mount: /Users/DGhoshal/workdir/uda/css/wfm/_tmp/scratch
     persist: ShortTerm

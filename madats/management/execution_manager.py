@@ -185,6 +185,7 @@ def dag_execution(dag):
     print("[Workflow-{}] Finished execution".format(_workflow_id))
     print("{}".format(result_list))
     #shutil.rmtree(_script_dir)
+    shutil.rmtree(outdir)
 
 """
 execute a single task of the workflow
