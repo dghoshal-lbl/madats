@@ -7,10 +7,6 @@ MaDaTS: Managing Data on Tiered Storage for Scientific Workflows
 * Updated: Feb 19, 2018
 **************************************************************************
 
-----------------------------------------------------------------
-
--![MaDaTS Architecture](docs/figs/madats.png)
-
 MaDaTS provides an integrated data management and workflow execution
 framework on multi-tiered storage systems. Users of MaDaTS can execute
 a workflow by either specifying the workflow stages in a YAML description
