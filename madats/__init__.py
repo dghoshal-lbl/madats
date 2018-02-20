@@ -5,7 +5,7 @@ from madats.core.storage import get_data_id, get_path_elements, build_data_path,
 from madats.management.data_manager import dm_workflow_aware, dm_storage_aware
 from madats.utils.constants import ExecutionMode, Persistence, Policy
 
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 
 __all__ = ['VirtualDataSpace', 'VirtualDataObject', 'Task', # data abstractions
            'map', 'manage', 'query', # programming abstractions

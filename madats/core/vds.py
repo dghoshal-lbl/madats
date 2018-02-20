@@ -401,6 +401,25 @@ class VirtualDataSpace():
             """
             vdo_dest.producers = [data_task]
             vdo_src.consumers = [data_task]
+            """
+            create a data preparer task to make the directory for vdo_dest
+            """
+            dest_dir_path = os.path.dirname(vdo_dest.abspath)
+            vdo_dest_dir = self.map(dest_dir_path)
+            data_preparer_id = self.__get_datatask_id__(None, vdo_dest_dir, 'preparer')
+            '''
+            - if the data preparer task is new, then create it and add as the
+              producer of vdo_dest
+            - if the data preparer task already exists, then add it as the
+              producer of vdo_dest 
+            '''
+            if not self.__datatask_exists__(data_preparer_id):
+                preparer_task = DataTask(data_preparer_id, None, vdo_dest_dir, DataTask.PREPARER)
+                self.__assign_preparer_task_dependency__(vdo_dest_dir, vdo_dest, preparer_task)
+                self.__datatasks__[data_preparer_id] = preparer_task
+                print('Data preparer task created: {}'.format(dest_dir_path))
+            else:
+                vdo_dest_dir.add_consumer(data_task)
         # if staging out data, vdo_src has no consumers: vdo_src <- vdo_dest
         elif (len(vdo_src.consumers) == 0 and len(vdo_src.producers) > 0) or \
                 (len(vdo_src.consumers) > 0 and len(vdo_src.producers) > 0 and vdo_src.persist == True):
@@ -447,6 +466,19 @@ class VirtualDataSpace():
             vdo_src.producers = [data_task]        
             vdo_dest.consumers.append(data_task)
             vdo_src.consumers = []
+            """
+            create a data preparer task to make the directory for vdo_dest
+            """
+            src_dir_path = os.path.dirname(vdo_src.abspath)
+            vdo_src_dir = self.map(src_dir_path)
+            data_preparer_id = self.__get_datatask_id__(None, vdo_src_dir, 'preparer')
+            if not self.__datatask_exists__(data_preparer_id):
+                preparer_task = DataTask(data_preparer_id, None, vdo_src_dir, DataTask.PREPARER)
+                self.__assign_preparer_task_dependency__(vdo_src_dir, vdo_src, preparer_task)
+                self.__datatasks__[data_preparer_id] = preparer_task
+                print('Data preparer task created: {}'.format(src_dir_path))
+            else:
+                vdo_src_dir.add_consumer(data_task)
         # for non-persistent intermediate data: vdo_src <-> vdo_dest
         else:
             if vdo_src.storage_id != 'archive' and storage.is_same(vdo_src.abspath, vdo_dest.abspath):
@@ -484,12 +516,28 @@ class VirtualDataSpace():
                 - appends the creation of the dummy vdo before the replaced vdo
                 - ensures executing the preparer datatask prior to using the replaced vdo
                 '''
-                dummy_vdo_path = vdo_dest.abspath + '.prepare'
-                dummy_vdo = self.map(dummy_vdo_path)
-                dummy_vdo.add_producer(data_task)
-                for producer in vdo_dest.producers:
-                    dummy_vdo.add_consumer(producer)
-                print('Data preparer task created for data {}'.format(dest_data))
+                #dummy_vdo_path = vdo_dest.abspath + '.prepare'
+                #dummy_vdo = self.map(dummy_vdo_path)
+                #dummy_vdo.add_producer(data_task)
+                #for producer in vdo_dest.producers:
+                #    dummy_vdo.add_consumer(producer)
+                '''
+                Simpler: create a vdo with destination's parent directory that will be
+                created before the destination data gets created
+                - appends the creation of the parent directory before the replaced vdo
+                - ensures executing the preparer datatask prior to using the replaced vdo
+                '''
+                dest_dir_path = os.path.dirname(vdo_dest.abspath)
+                vdo_dest_dir = self.map(dest_dir_path)
+                data_preparer_id = self.__get_datatask_id__(None, vdo_dest_dir, 'preparer')
+                if not self.__datatask_exists__(data_preparer_id):
+                    preparer_task = DataTask(data_preparer_id, None, vdo_dest_dir, DataTask.PREPARER)
+                    self.__assign_preparer_task_dependency__(vdo_dest_dir, vdo_dest, preparer_task)
+                    self.__datatasks__[data_preparer_id] = preparer_task
+                    print('Data preparer task created: {}'.format(dest_dir_path))
+                else:
+                    for producer in vdo_dest.producers:
+                        vdo_dest_dir.add_consumer(producer)
             self.replace(vdo_src, vdo_dest)
                 
         '''
@@ -500,22 +548,32 @@ class VirtualDataSpace():
 
 
     '''
+    create a dummy vdo and assign data preparer task as producer and consumer 
+    '''
+    def __assign_preparer_task_dependency__(self, vdo_src, vdo_dest, preparer_task):
+        vdo_src.add_producer(preparer_task)
+        for producer in vdo_dest.producers:
+            vdo_src.add_consumer(producer)
+
+
+    '''
     cleanup task that automatically removes unused data mapped to a VDO
     '''
     def create_cleanup_task(self, vdo):
         if not vdo.persist and vdo.__is_temporary__:
-            print("******* Path {} will be removed, Persist: {} ******".format(vdo.abspath, vdo.persist))
+            print("******* Path {} will be removed ******".format(vdo.abspath, vdo.persist))
             dummy_vdo_path = vdo.abspath + '.deleted'
             dummy_vdo = self.map(dummy_vdo_path)
-            for consumer in vdo.consumers:
-                dummy_vdo.add_producer(consumer)
-            for producer in vdo.producers:
-                dummy_vdo.add_producer(producer)
-            
             dt_id = self.__get_datatask_id__(vdo, dummy_vdo)
-            cleanup_task = DataTask(dt_id, vdo, dummy_vdo, DataTask.CLEANER)
-            #cleanup_task = CleanupTask(vdo)
-            dummy_vdo.add_consumer(cleanup_task)
+            if not self.__datatask_exists__(dt_id):
+                for consumer in vdo.consumers:
+                    dummy_vdo.add_producer(consumer)
+                for producer in vdo.producers:
+                    dummy_vdo.add_producer(producer)            
+                cleanup_task = DataTask(dt_id, vdo, dummy_vdo, DataTask.CLEANER)
+                self.__datatasks__[dt_id] = cleanup_task
+                #cleanup_task = CleanupTask(vdo)
+                dummy_vdo.add_consumer(cleanup_task)
 
 
     '''
@@ -541,8 +599,22 @@ class VirtualDataSpace():
     '''
     calculate data-task id based on the src and dest data
     '''
-    def __get_datatask_id__(self, vdo_src, vdo_dest):
+    def __get_datatask_id__(self, vdo_src, vdo_dest, task_type=''):
+        if vdo_src is not None and vdo_dest is not None:
             return (vdo_src.__id__ + vdo_dest.__id__)
+        elif vdo_src is None:
+            if task_type != '':
+                return vdo_dest.__id__ + task_type
+            else:
+                print('Task type is required if vdo_src is None')
+                sys.exit(1)
+        else:
+            if task_type != '':
+                return vdo_src.__id__ + task_type
+            else:
+                print('Task type is required if vdo_dest is None')
+                sys.exit(1)
+            
 
 
     '''
@@ -722,7 +794,7 @@ class DataTask(Task):
         Task.__init__(self, command='', type=TaskType.DATA)        
         self.__id__ = id
         if datatask_type == DataTask.PREPARER:
-            self.params = [os.path.dirname(vdo_dest.abspath)]
+            self.params = [vdo_dest.abspath]
             self.command = "mkdir -p"
         elif datatask_type == DataTask.MOVER:
             self.params = [vdo_src, vdo_dest]
@@ -755,7 +827,8 @@ class DataTask(Task):
             filename = os.path.basename(vdo_dest.abspath)
             command = 'cd {}; hsi -q "prompt; mkdir -p {}; cd {}; mput {}"; ls'.format(src_dir, dest_dir, dest_dir, filename)
         else:
-            command = 'mkdir -p {}; cp -R'.format(dest_directory)
+            #command = 'mkdir -p {}; cp -R'.format(dest_directory)
+            command = 'cp -R'.format(dest_directory)
 
         return command
         
