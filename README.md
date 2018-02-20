@@ -36,8 +36,8 @@ To install MaDaTS, do:
 
 The environment variable `MADATS_HOME` should be set prior to using MaDaTS.
 The setup script creates a MADATS_HOME file that can be sourced prior to
-using MaDaTS to set the environment variable MADATS_HOME. Alternatively,
-users can add MADATS_HOME to their bashrc file.
+using MaDaTS to set the environment variable `MADATS_HOME`. Alternatively,
+users can set `MADATS_HOME` through .bashrc and/or .bash_profile files.
 
 TEST
 -----
