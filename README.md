@@ -34,10 +34,14 @@ To install MaDaTS, do:
         pip install -r requirements.txt
         python setup.py install
 
+The environment variable `MADATS_HOME` should be set prior to using MaDaTS.
+The setup script creates a MADATS_HOME file that can be sourced prior to
+using MaDaTS to set the environment variable MADATS_HOME. Alternatively,
+users can add MADATS_HOME to their bashrc file.
+
 TEST
 -----
-The environment variable `MADATS_HOME` should be set prior to using MaDaTS.
-Hence to test MaDaTS, do:
+To test MaDaTS, do:
 
         source MADATS_HOME
         py.test tests/test_madats.py
