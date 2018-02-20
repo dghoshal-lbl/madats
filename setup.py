@@ -32,7 +32,10 @@ def madats_config():
         os.makedirs(archive)
 
     __setup_storage_config__(scratch, burst, archive)
-    print('MaDaTS configuration complete')
+    with open(os.path.join(currdir, 'MADATS_HOME'), 'w') as f:
+        f.write('#!/bin/bash\n')
+        f.write('export MADATS_HOME={}\n'.format(os.getenv('MADATS_HOME')))
+    print('MaDaTS configuration complete. Use `source {}` to setup MADATS_HOME'.format(os.path.join(currdir, 'MADATS_HOME')))
         
 
 def __setup_storage_config__(scratch, burst, archive):
