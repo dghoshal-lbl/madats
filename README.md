@@ -75,3 +75,17 @@ examples that describe the different features of MaDaTS.
 
 	# Manage data and workflow execution through MaDaTS
 	madats.manage(vds)
+
+
+Configuring Storage Tiers
+--------------------------
+MaDaTS is designed to manage data seamlessly across multiple storage tiers. The storage
+configuration can be defined through `config/storage.yaml`. The configuration file contains
+an identifier for each storage tier and its associated properties.
+
+Batch Scheduler
+---------------
+MaDaTS currently supports PBS and SLURM batch schedulers for managing workflow tasks as
+batch jobs. The various options for the batch schedulers are specified in their respective
+configuration files `config/pbs.cfg` and `config/slurm.cfg`. Users can also add their own
+batch schedulers by specifying the respective configuration files.
