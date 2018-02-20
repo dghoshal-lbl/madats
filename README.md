@@ -2,7 +2,7 @@
 MaDaTS: Managing Data on Tiered Storage for Scientific Workflows
 
 * Author: Devarshi Ghoshal
-* v1.1.0
+* v1.1.1
 * Created: Oct 25, 2016
 * Updated: Feb 19, 2018
 **************************************************************************
@@ -10,9 +10,9 @@ MaDaTS: Managing Data on Tiered Storage for Scientific Workflows
 MaDaTS provides an integrated data management and workflow execution
 framework on multi-tiered storage systems. Users of MaDaTS can execute
 a workflow by either specifying the workflow stages in a YAML description
-file, or use the API to manage the workflow through VDS. Some examples of
-specifying the workflow description and using the API are provided in the
-examples/ directory.
+file, or use the API to manage workflows and associated data. Some examples
+of specifying the workflow description and using the API are provided in
+the examples/ directory.
 
 The MaDaTS API provides simple data abstractions for managing workflow and
 data on multi-tiered storage. It takes a data-driven approach to executing
@@ -52,8 +52,8 @@ Example
 In order to manage data and workflow, users need to create virtual data objects
 and tasks, and add them to a Virtual Data Space (VDS). Data and tasks of the
 workflow are managed through MaDaTS by simply calling the `manage` function.
-A simple example is provided below. The examples/ directory contains some more
-examples that describe the different features of MaDaTS.
+An example listing the steps to manage a workflow and its data through MaDaTS
+is given below.
 
 	import madats
 	
@@ -76,6 +76,8 @@ examples that describe the different features of MaDaTS.
 	# Manage data and workflow execution through MaDaTS
 	madats.manage(vds)
 
+The examples/ directory contains some more examples that describe
+the different features of MaDaTS.
 
 Configuring Storage Tiers
 --------------------------
