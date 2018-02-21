@@ -1,3 +1,25 @@
+************************************************************************
+
+"MaDaTS" Copyright (c) 2018, The Regents of the University of
+California, through Lawrence Berkeley National Laboratory (subject to
+receipt of any required approvals from the U.S. Dept. of Energy).  All
+rights reserved.
+
+If you have questions about your rights to use or distribute this
+software, please contact Berkeley Lab's Innovation & Partnerships
+Office at  IPO@lbl.gov.
+
+NOTICE.  This Software was developed under funding from the U.S.
+Department of Energy and the U.S. Government consequently retains
+certain rights. As such, the U.S. Government has been granted for
+itself and others acting on its behalf a paid-up, nonexclusive,
+irrevocable, worldwide license in the Software to reproduce,
+distribute copies to the public, prepare derivative works, and perform
+publicly and display publicly, and to permit other to do so.
+
+**************************************************************************
+
+
 **************************************************************************
 MaDaTS: Managing Data on Tiered Storage for Scientific Workflows
 
@@ -36,8 +58,7 @@ To install MaDaTS, do:
 
 The environment variable `MADATS_HOME` should be set prior to using MaDaTS.
 The setup script creates a MADATS_HOME file that can be sourced prior to
-using MaDaTS to set the environment variable `MADATS_HOME`. Alternatively,
-users can set `MADATS_HOME` through .bashrc and/or .bash_profile files.
+using MaDaTS to set the environment variable `MADATS_HOME`.
 
 TEST
 -----
@@ -76,8 +97,38 @@ is given below.
 	# Manage data and workflow execution through MaDaTS
 	madats.manage(vds)
 
-The examples/ directory contains some more examples that describe
-the different features of MaDaTS.
+It is important to note how MaDaTS uses data as the first-class
+citizen. Everything in MaDaTS is centered around virtual data objects.
+Tasks are specified as *producers* and *consumers* of virtual data
+objects. A VDS is a collection of several virtual data objects that
+that represent the data of a workflow.
+
+In addition to creating a VDS step-by-step as shown above, users
+can also map a workflow into VDS. MaDaTS provides the `map` function
+that takes as input a YAML description of a workflow, or a dict-like
+object (similar to JSON). $MADATS_HOME/examples/madats_workflow.yaml
+specifies a description file for a sample workflow.
+
+The examples/ directory also contains examples that describe different
+ways of specifying a workflow and data management properties in MaDaTS.
+
+Data Management Abstractions
+----------------------------
+MaDaTS provides a simple data management abstraction through **manage**. Users simply
+create a VDS and tell MaDaTS to manage workflow data and tasks. The 'manage' interface
+also allows users to group the tasks in different ways. Additionally, users can also
+select the data management strategy in MaDaTS. By default, MaDaTS provides three data
+management strategies - i) *workflow-aware*: data management decisions are made based
+on the structure of the workflow, ii) *storage-aware*: data management decisions are
+made based on the storage properties, and iii) *passive*: allows users to define custom
+data placement and movement policies. The examples/ directory contains some examples
+of defining data and workflow management strategies in MaDaTS.
+
+Users can also define new data management strategies in MaDaTS by defining data tasks
+through the **create_data_task** interface. This adds the necessary data operations
+needed for efficient execution of the workflow. Both *workflow-aware* and *storage-aware*
+data management strategies use this interface to define data operations based on
+respective policies.
 
 Configuring Storage Tiers
 --------------------------

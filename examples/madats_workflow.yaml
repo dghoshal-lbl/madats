@@ -1,0 +1,35 @@
+task1:
+  command: python
+  params:
+    - test1.py
+    - -i
+    - file1
+    - file2
+    - -o
+    - int1
+  vin:
+    - file1
+    - file2
+  vout:
+    - int1
+  scheduler: slurm
+  scheduler_opts:
+    nodes: 4
+    walltime: 00:30:00
+    partition: regular
+
+task2:
+  command: python
+  params:
+    - test2.py
+    - int1
+    - out2
+  vin:
+    - int1
+  vout:
+    - out2
+  scheduler: pbs
+  scheduler_opts:
+    nodes: 2
+    walltime: 00:15:00
+    partition: regular
