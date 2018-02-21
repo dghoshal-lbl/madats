@@ -86,10 +86,10 @@ can also map a workflow into VDS. MaDaTS provides the `map` function
 that takes as input a YAML description of a workflow, or a dict-like
 object (similar to JSON). 
 
-        import madats
+       import madats
 
-        # Map a YAML workflow description to VDS
-        vds = madats.map('workflow/description/yaml', language='yaml') 
+       # Map a YAML workflow description to VDS
+       vds = madats.map('workflow/description/yaml', language='yaml') 
 
 $MADATS_HOME/examples/madats_workflow.yaml specifies a description file
 for a sample workflow. The examples/ directory also contains examples that
