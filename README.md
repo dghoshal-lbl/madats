@@ -96,24 +96,6 @@ for a sample workflow. The examples/ directory also contains examples that
 describe different ways of specifying a workflow and data management properties
 in MaDaTS.
 
-Data Management Abstractions
-----------------------------
-MaDaTS provides a simple data management abstraction through the **manage** interface. Users simply
-create a VDS and tell MaDaTS to manage workflow data and tasks. The 'manage' interface
-also allows users to group the tasks in different ways. Additionally, users can also
-select the data management strategy in MaDaTS. By default, MaDaTS provides three data
-management strategies - i) *workflow-aware*: data management decisions are made based
-on the structure of the workflow, ii) *storage-aware*: data management decisions are
-made based on the storage properties, and iii) *passive*: allows users to define custom
-data placement and movement policies. The examples/ directory contains some examples
-of defining data and workflow management strategies in MaDaTS.
-
-Users can also define new data management strategies in MaDaTS by defining data tasks
-through the **create_data_task** interface. This adds the necessary data operations
-needed for efficient execution of the workflow. Both *workflow-aware* and *storage-aware*
-data management strategies use this interface to define data operations based on
-respective policies.
-
 Configuring Storage Tiers
 --------------------------
 MaDaTS is designed to manage data seamlessly across multiple storage tiers. The storage
