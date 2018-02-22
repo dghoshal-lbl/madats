@@ -1,8 +1,8 @@
 """
-`tests.query_madats`
+`tests.test_queries`
 ====================================
 
-.. currentmodule:: tests.query_madats
+.. currentmodule:: tests.test_queries
 
 :platform: Unix, Mac
 :synopsis: Unit test module for querying MaDaTS
