@@ -17,33 +17,13 @@ import shlex
 from madats.core.vds import VirtualDataSpace, VirtualDataObject
 from madats.utils.constants import ExecutionMode, Policy
 from madats.management import workflow_manager, execution_manager, data_manager
+import sys
+from collections import namedtuple
 
 '''
 Coordinates the movement of data between multiple storage tiers through VDS (manages VDS and virtual data objects)
  - creates data tasks and a DAG -- manages `WHAT' data is moved
 '''
-
-#"""
-#maps a task into a VDS, making it a collection of VDOs
-#"""
-#def __map2vds__(vds, task):
-#    for input in task.inputs:
-#        data_object = os.path.abspath(input)
-#        vdo = vds.create_vdo(data_object)
-#        vdo.add_consumer(task)
-#    for output in task.outputs:
-#        data_object = os.path.abspath(output)
-#        vdo = vds.create_vdo(data_object)
-#        vdo.add_producer(task)
-
-
-#"""
-#initialize a VDS
-#"""
-#def initVDS():
-#    vds = VirtualDataSpace()
-#    return vds
-
 
 """
 given a workflow, map it to VDS
@@ -53,22 +33,6 @@ def map(workflow, language='yaml', policy=Policy.NONE):
     vds.data_management_policy = policy
     return vds
 
-
-#"""
-#manage a VDS using different data management strategies
-#creates a DAG of the extended workflow containing data tasks and compute tasks
-#- it's an adjacency list representation of the graph where the list pertaining 
-#to a vertex contains the vertices you can reach directly from that vertex
-#"""
-#def plan(vds):
-#    policy = vds.data_management_policy
-#    if policy == Policy.NONE:
-#        return
-#    elif policy == Policy.WORKFLOW_AWARE:
-#        data_manager.dm_workflow_aware(vds)
-#    elif policy == Policy.STORAGE_AWARE:
-#        data_manager.dm_storage_aware(vds)
-    
         
 """
 manage VDS by managing data as per the defined policy
@@ -118,22 +82,42 @@ validate a VDS: validate if the params of a task and the vdo consumer/producer
 list match
 """
 def validate(vds):
-    pass
+    unmapped_vdos = {}
+    Result = namedtuple('Result', 'isvalid unmapped')
+    for vdo in vds.vdos:
+        for prod in vdo.producers:
+            for param in prod.params:
+                if type(param) == VirtualDataObject:
+                    if not vds.vdo_exists(param.__id__):
+                        unmapped_vdos[param.__id__] = param
+
+        for cons in vdo.consumers:
+            for param in cons.params:
+                if type(param) == VirtualDataObject:
+                    if not vds.vdo_exists(param.__id__):
+                        unmapped_vdos[param.__id__] = param
+        
+    valid = True
+    if len(unmapped_vdos) > 0:
+        valid = False
+
+    result = Result(isvalid=valid, unmapped=unmapped_vdos)
+    return result
 
 
 """
 query the VDS
 """
-def query(vds, query):
-    print('Query interface is not yet implemented!')
-    pass
+def query(vds, metrics):
+    if type(metrics) != list:
+        print("Metrics must be of type `list`")
+        sys.exit(1)
 
-
-#"""
-#destroy the VDS
-#"""
-#def destroy(vds):
-#    vdos = vds.vdos
-#    for vdo in vdos:
-#        vds.delete(vdo)
-
+    metric_results = vds.__query_elements__
+    query_results = {}
+    for metric in metrics:
+        if metric in metric_results:
+            query_results[metric] = metric_results[metric]
+        else:
+            query_results[metric] = None
+    return query_results

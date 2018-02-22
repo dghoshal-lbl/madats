@@ -178,7 +178,7 @@ class VirtualDataObject(object):
 
     def add_consumer(self, task):
         if isinstance(task, Task):
-            if task not in self._consumers:
+           if task not in self._consumers:
                 self._consumers.append(task)
         else:
             print("Invalid task type")
@@ -236,9 +236,9 @@ class VirtualDataSpace():
         self._auto_cleanup = False
 
         # basic for tests, more to be added
-        self.__query_elements__ = {'num_vdos': 0, 'total_tasks': 0,
-                                   'total_compute_tasks': 0, 'total_data_tasks': 0,
-                                   'num_data_movements': 0}
+        self.__query_elements__ = {'num_vdos': 0, 'data_tasks': 0,
+                                   'data_movements': 0, 'preparer_tasks': 0,
+                                   'cleanup_tasks': 0}
 
     @property
     def vdos(self):
@@ -258,6 +258,7 @@ class VirtualDataSpace():
         self.datapaths[abspath] = vdo
         vdo_id = storage.get_data_id(abspath) 
         self.__vdo_dict__[vdo_id] = vdo
+        self.__query_elements__['num_vdos'] += 1
         return vdo
 
     '''
@@ -283,6 +284,7 @@ class VirtualDataSpace():
             self.vdos.append(vdo)
             self.datapaths[vdo.abspath] = vdo
             self.__vdo_dict__[vdo.__id__] = vdo
+            self.__query_elements__['num_vdos'] += 1
 
 
     '''
@@ -327,7 +329,9 @@ class VirtualDataSpace():
     '''
     def delete(self, vdo):
         del self.__vdo_dict__[vdo.__id__]
+        del self.datapaths[vdo.abspath]
         self._vdos.remove(vdo)
+        self.__query_elements__['num_vdos'] -= 1
 
 
     '''
@@ -344,8 +348,9 @@ class VirtualDataSpace():
     creates a data task to move a virtual data object to a different storage layer(s)
     """
     def create_data_task(self, vdo_src, vdo_dest, **kwargs):
-        # if the vdo is not movable, then no data task is needed
+        # if the vdo is not movable, then no data task is needed, nor the dest vdo
         if vdo_src.non_movable:
+            self.delete(vdo_dest)
             return
 
         if not self.vdo_exists(vdo_src.__id__):
@@ -394,6 +399,7 @@ class VirtualDataSpace():
 
             data_task = DataTask(dt_id, vdo_src, vdo_dest, **kwargs)
             self.__datatasks__[dt_id] = data_task
+            self.__query_elements__['data_movements'] += 1
             """
             - data stagein task becomes the consumer of the original data
             - data stagein task becomes the producer of the new data
@@ -418,6 +424,7 @@ class VirtualDataSpace():
                 self.__assign_preparer_task_dependency__(vdo_dest_dir, vdo_dest, preparer_task)
                 self.__datatasks__[data_preparer_id] = preparer_task
                 print('Data preparer task created: {}'.format(dest_dir_path))
+                self.__query_elements__['preparer_tasks'] += 1
             else:
                 vdo_dest_dir.add_consumer(data_task)
         # if staging out data, vdo_src has no consumers: vdo_src <- vdo_dest
@@ -458,6 +465,7 @@ class VirtualDataSpace():
             """
             data_task = DataTask(dt_id, vdo_dest, vdo_src, **kwargs)
             self.__datatasks__[dt_id] = data_task
+            self.__query_elements__['data_movements'] += 1
             '''
             since vdo_src is where the final output should be while staging out,
             it's producer is the data task; while all the compute tasks actually
@@ -477,6 +485,7 @@ class VirtualDataSpace():
                 self.__assign_preparer_task_dependency__(vdo_src_dir, vdo_src, preparer_task)
                 self.__datatasks__[data_preparer_id] = preparer_task
                 print('Data preparer task created: {}'.format(src_dir_path))
+                self.__query_elements__['preparer_tasks'] += 1
             else:
                 vdo_src_dir.add_consumer(data_task)
         # for non-persistent intermediate data: vdo_src <-> vdo_dest
@@ -487,57 +496,24 @@ class VirtualDataSpace():
                 vdo_dest.__is_temporary__ = True
                 return
 
-            dt_id = self.__get_datatask_id__(vdo_src, vdo_dest)
-            if self.__datatask_exists__(dt_id):
-                print('Data task ({}) already exists'.format(dt))
-                return
-            if not os.path.exists(os.path.dirname(vdo_dest.abspath)):
-                data_task = DataTask(dt_id, vdo_src, vdo_dest, DataTask.PREPARER)
-                '''
-                Pick any one producer task and select the vdo for which it's a consumer.
-                The data preparer task should be that vdo's producer so as to make sure
-                that the data preparer task runs before the `any one producer`.
-                If there is no such vdo for which the producer task is a consumer,
-                then the original vdo (vdo_src) is generated without using any other
-                vdo/data. So, the preparer task needs to be appended before the compute
-                task executes.
-                '''
-                #is_producer_consumer = False
-                #if len(vdo_dest.producers) > 0:
-                #    any_one_producer = vdo_dest.producers[0]
-                #    for vdo in self.vdos:
-                #        if any_one_producer in vdo.consumers:
-                #            vdo.add_producer(data_task)
-                #            is_producer_consumer = True
-                #            break
-                #    if not is_producer_consumer:
-                '''
-                Simpler: just create a dummy vdo that is used to prepare for the datatask
-                - appends the creation of the dummy vdo before the replaced vdo
-                - ensures executing the preparer datatask prior to using the replaced vdo
-                '''
-                #dummy_vdo_path = vdo_dest.abspath + '.prepare'
-                #dummy_vdo = self.map(dummy_vdo_path)
-                #dummy_vdo.add_producer(data_task)
-                #for producer in vdo_dest.producers:
-                #    dummy_vdo.add_consumer(producer)
-                '''
-                Simpler: create a vdo with destination's parent directory that will be
-                created before the destination data gets created
-                - appends the creation of the parent directory before the replaced vdo
-                - ensures executing the preparer datatask prior to using the replaced vdo
-                '''
-                dest_dir_path = os.path.dirname(vdo_dest.abspath)
-                vdo_dest_dir = self.map(dest_dir_path)
-                data_preparer_id = self.__get_datatask_id__(None, vdo_dest_dir, 'preparer')
-                if not self.__datatask_exists__(data_preparer_id):
-                    preparer_task = DataTask(data_preparer_id, None, vdo_dest_dir, DataTask.PREPARER)
-                    self.__assign_preparer_task_dependency__(vdo_dest_dir, vdo_dest, preparer_task)
-                    self.__datatasks__[data_preparer_id] = preparer_task
-                    print('Data preparer task created: {}'.format(dest_dir_path))
-                else:
-                    for producer in vdo_dest.producers:
-                        vdo_dest_dir.add_consumer(producer)
+            '''
+            Simpler: create a vdo with destination's parent directory that will be
+            created before the destination data gets created
+            - appends the creation of the parent directory before the replaced vdo
+            - ensures executing the preparer datatask prior to using the replaced vdo
+            '''
+            dest_dir_path = os.path.dirname(vdo_dest.abspath)
+            vdo_dest_dir = self.map(dest_dir_path)
+            data_preparer_id = self.__get_datatask_id__(None, vdo_dest_dir, 'preparer')
+            if not self.__datatask_exists__(data_preparer_id):
+                preparer_task = DataTask(data_preparer_id, None, vdo_dest_dir, DataTask.PREPARER)
+                self.__assign_preparer_task_dependency__(vdo_dest_dir, vdo_dest, preparer_task)
+                self.__datatasks__[data_preparer_id] = preparer_task
+                print('Data preparer task created: {}'.format(dest_dir_path))
+                self.__query_elements__['preparer_tasks'] += 1
+            else:
+                for producer in vdo_dest.producers:
+                    vdo_dest_dir.add_consumer(producer)
             self.replace(vdo_src, vdo_dest)
                 
         '''
@@ -574,6 +550,8 @@ class VirtualDataSpace():
                 self.__datatasks__[dt_id] = cleanup_task
                 #cleanup_task = CleanupTask(vdo)
                 dummy_vdo.add_consumer(cleanup_task)
+                self.__query_elements__['cleanup_tasks'] += 1
+
 
 
     '''
@@ -594,6 +572,7 @@ class VirtualDataSpace():
         if datatask_id in self.__datatasks__:
             return True
         else:
+            self.__query_elements__['data_tasks'] += 1
             return False
 
     '''
