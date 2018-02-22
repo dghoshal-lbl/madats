@@ -307,19 +307,19 @@ class VirtualDataSpace():
     '''
     replaces a VDO with another VDO
     '''
-    def replace(self, vdo_src, vdo_dest):
-        for task in vdo_dest.consumers:
+    def replace(self, old_vdo, new_vdo):
+        for task in new_vdo.consumers:
             params = task.params
             for i in range(len(params)):
-                if task.params[i] == vdo_src:
-                    task.params[i] = vdo_dest            
-        for task in vdo_dest.producers:
+                if task.params[i] == old_vdo:
+                    task.params[i] = new_vdo            
+        for task in new_vdo.producers:
             params = task.params
             for i in range(len(params)):
-                if task.params[i] == vdo_src:
-                    task.params[i] = vdo_dest            
-        print('Changing datapath from {} to {}'.format(vdo_src.abspath, vdo_dest.abspath))
-        self.delete(vdo_src)
+                if task.params[i] == old_vdo:
+                    task.params[i] = new_vdo            
+        print('Changing datapath from {} to {}'.format(old_vdo.abspath, new_vdo.abspath))
+        self.delete(old_vdo)
 
 
     '''

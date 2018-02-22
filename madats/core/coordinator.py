@@ -1,13 +1,16 @@
 """
-manages a virtual data space (VDS) for a workflow
-- vds coordinator is always responsible for creating data tasks
-  .. can be driven by user needs (UD)
-  .. can be driven by storage and data properties (SD)
-  .. can be driven by the workflow structure (WD)
-- but managing the data tasks can be a responsibility of storage system or vds coordinator
-- so, provide an API to create and connect data tasks in a workflow
-- use the API to implement SD and WD, leaving scope for implementing diff algo for UD
+`madats.core.coordinator`
+====================================
+
+.. currentmodule:: madats.core.coordinator
+
+:platform: Unix, Mac
+:synopsis: Module that manages data and workflow through a Virtual Data Space (VDS)
+
+.. moduleauthor:: Devarshi Ghoshal <dghoshal@lbl.gov>
+
 """
+
 import uuid
 import os
 import shlex

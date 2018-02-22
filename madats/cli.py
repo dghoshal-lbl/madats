@@ -20,7 +20,7 @@ def main():
     parser.set_defaults(func=execute)
     parser.add_argument('-w','--workflow', help='workflow description file', required=True)
     parser.add_argument('-l','--language', help='workflow description language', default='yaml')
-    parser.add_argument('-m','--mode', help='execution mode', choices=['dag', 'bin', 'priority', 'dependency'], default='dag')
+    parser.add_argument('-m','--mode', help='execution mode', choices=['dag', 'bin'], default='dag')
     parser.add_argument('-p','--policy', help='data management policy', choices=['none', 'wfa', 'sta'], default='none')
     
     args = parser.parse_args()

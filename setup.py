@@ -77,7 +77,6 @@ setup(name='MaDaTS',
       ],
       install_requires=install_deps,
       entry_points={'console_scripts': ['madats = madats.cli:main']},
-      #data_files=[('',['setup.py'])]      
 )
 
 madats_config()
