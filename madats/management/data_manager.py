@@ -121,25 +121,45 @@ def dm_workflow_aware(vds):
     then the VDO can be moved and used from another storage tier
     '''
     for vdo in vdos:
+        if len(vdo.producers) > 0 and len(vdo.consumers) > 0:
+            new_vdo = vds.copy(vdo, fast_tier)
+            #vds.create_data_task(vdo, new_vdo)
+        
+
+"""
+workflow-aware data management: data is moved only when there is an overlap
+between computation and data transfer steps.
+"""
+def dm_workflow_aware1(vds):    
+    fast_tier = storage.get_selected_storage()
+    '''
+    create a shallow copy of the VDO list, because new VDOs will be added to VDS now
+    '''
+    vdos = [v for v in vds.vdos]
+    '''
+    if a VDO's consumer has predecessors, or if a VDO's producer has successors,
+    then the VDO can be moved and used from another storage tier
+    '''
+    for vdo in vdos:
         #print("WFA: {} {} {}".format(vdo.abspath, len(vdo.producers), len(vdo.consumers)))
         # if it's an input: create data task for staging data in
         if len(vdo.producers) == 0 and len(vdo.consumers) > 0:
             for task in vdo.consumers:
                 if len(task.predecessors) > 0:
                     new_vdo = vds.copy(vdo, fast_tier)
-                    vds.create_data_task(vdo, new_vdo)
+                    #vds.create_data_task(vdo, new_vdo)
                     break            
         # if it's an output, create data task for staging data out
         elif len(vdo.consumers) == 0 and len(vdo.producers) > 0:
             for task in vdo.producers:
                 if len(task.successors) > 0:
                     new_vdo = vds.copy(vdo, fast_tier)
-                    vds.create_data_task(vdo, new_vdo)
+                    #vds.create_data_task(vdo, new_vdo)
                     break
         # if it's intermediate data: generate/use data from fast tier
         else:
             new_vdo = vds.copy(vdo, fast_tier)
-            vds.create_data_task(vdo, new_vdo)
+            #vds.create_data_task(vdo, new_vdo)
         
 
 """
@@ -156,7 +176,7 @@ def dm_storage_aware(vds):
         '''
         create a data task for each data object in VDS
         '''
-        vds.create_data_task(vdo, new_vdo)
+        #vds.__create_data_task__(vdo, new_vdo)
 
 '''
 def plan(vds):

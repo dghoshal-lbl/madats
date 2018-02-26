@@ -293,7 +293,7 @@ class VirtualDataSpace():
     def copy(self, vdo_src, dest_id):
         relative_path = vdo_src.relative_path
         dest_path = storage.build_data_path(dest_id, relative_path)
-        vdo_id = storage.get_data_id(dest_path)
+        vdo_id = storage.get_data_id(os.path.abspath(dest_path))
         if self.vdo_exists(vdo_id):
              return self.__vdo_dict__[vdo_id]
 
@@ -303,6 +303,7 @@ class VirtualDataSpace():
         vdo.consumers = [cons for cons in vdo_src.consumers]
         vdo.producers = [prod for prod in vdo_src.producers]
         #self.__vdo_dict__[vdo_id] = vdo
+        self.__create_data_task__(vdo_src, vdo)
         return vdo
 
 
@@ -328,10 +329,11 @@ class VirtualDataSpace():
     deletes a VDO from the VDS
     '''
     def delete(self, vdo):
-        del self.__vdo_dict__[vdo.__id__]
-        del self.datapaths[vdo.abspath]
-        self._vdos.remove(vdo)
-        self.__query_elements__['num_vdos'] -= 1
+        if vdo.__id__ in self.__vdo_dict__:
+            del self.__vdo_dict__[vdo.__id__]
+            del self.datapaths[vdo.abspath]
+            self._vdos.remove(vdo)
+            self.__query_elements__['num_vdos'] -= 1
 
 
     '''
@@ -347,7 +349,7 @@ class VirtualDataSpace():
     """
     creates a data task to move a virtual data object to a different storage layer(s)
     """
-    def create_data_task(self, vdo_src, vdo_dest, **kwargs):
+    def __create_data_task__(self, vdo_src, vdo_dest, **kwargs):
         # if the vdo is not movable, then no data task is needed, nor the dest vdo
         if vdo_src.non_movable:
             self.delete(vdo_dest)
@@ -441,7 +443,7 @@ class VirtualDataSpace():
 
             dt_id = self.__get_datatask_id__(vdo_src, vdo_dest)            
             if self.__datatask_exists__(dt_id):
-                print('Data task ({}) already exists'.format(dt))
+                print('Data task ({}) already exists'.format(dt_id))
                 return
             else:
                 print('Data stage-out task ({} -> {}) created'.format(dest_data, src_data))
@@ -521,6 +523,8 @@ class VirtualDataSpace():
         and hence, the actual physical data may not be persisted (depends on the VDO properties)
         '''
         vdo_dest.__is_temporary__ = True
+        if self.auto_cleanup:
+            self.__create_cleanup_task__(vdo_dest)
 
 
     '''
@@ -535,7 +539,7 @@ class VirtualDataSpace():
     '''
     cleanup task that automatically removes unused data mapped to a VDO
     '''
-    def create_cleanup_task(self, vdo):
+    def __create_cleanup_task__(self, vdo):
         if not vdo.persist and vdo.__is_temporary__:
             print("******* Path {} will be removed ******".format(vdo.abspath, vdo.persist))
             dummy_vdo_path = vdo.abspath + '.deleted'
