@@ -445,9 +445,16 @@ class Tester():
         vds.add(vdo3)
         vds.add(vdo4)
         vds.add(vdo5)
-        
+
+        assert(vds.count() == 5)
+
         # manage VDS
         madats.manage(vds)
+
+        assert(len(vds.data()) == 10)
+        task_map = vds.tasks()
+        assert(len(task_map['compute']) + len(task_map['data']) == 8)
+        assert(vds.lookup('data_tasks') == 5)
 
         self.__assert_query_results__(vds, 10, 5, 3, 2, 0)
 

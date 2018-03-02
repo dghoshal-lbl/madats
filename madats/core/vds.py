@@ -235,10 +235,10 @@ class VirtualDataSpace():
         self.__datatasks__ = {}
         self._auto_cleanup = False
 
-        # basic for tests, more to be added
-        self.__query_elements__ = {'num_vdos': 0, 'data_tasks': 0,
-                                   'data_movements': 0, 'preparer_tasks': 0,
-                                   'cleanup_tasks': 0}
+        # basic lookup keys, more can be added later
+        self.__query_elements__ = {'num_vdos': 0, 'data_tasks': 0, 'data_movements': 0,
+                                   'preparer_tasks': 0, 'cleanup_tasks': 0,
+                                   'auto_cleanup': False, 'policy': None}
 
     @property
     def vdos(self):
@@ -637,6 +637,75 @@ class VirtualDataSpace():
                     dag[con] = []
         return dag
 
+    ####### Query Interfaces #######
+    """
+    count(): number of virtual data objects in a VDS
+    """
+    def count(self):
+        return self.__query_elements__['num_vdos']
+    
+
+    """
+    data() : a listof datapaths mapped to the VDS
+    """
+    def data(self):
+        data_elements = []
+        for vdo in self.vdos:
+            data_elements.append(vdo.abspath)
+        return data_elements
+
+
+    """
+    tasks() : dictionary of the list of tasks based on their types
+    """
+    def tasks(self):
+        compute_tasks = {}
+        data_tasks = {}
+        for vdo in self.vdos:
+            for prod in vdo.producers:
+                if prod.type == TaskType.COMPUTE:
+                    if prod.__id__ not in compute_tasks:
+                        compute_tasks[prod.__id__] = self.__get_task_command__(prod)
+                else:
+                    if prod.__id__ not in data_tasks:
+                        data_tasks[prod.__id__] = self.__get_task_command__(prod)
+            for cons in vdo.consumers:
+                if cons.type == TaskType.COMPUTE:
+                    if cons.__id__ not in compute_tasks:
+                        compute_tasks[cons.__id__] = self.__get_task_command__(cons)
+                else:
+                    if cons.__id__ not in data_tasks:
+                        data_tasks[cons.__id__] = self.__get_task_command__(cons)
+
+        tasks = {'compute': [], 'data': []}        
+        for task in compute_tasks:
+            tasks['compute'].append(compute_tasks[task])
+        for task in data_tasks:
+            tasks['data'].append(data_tasks[task])
+        
+        return tasks
+
+    
+    """
+    lookup(): get specific information about the VDS
+    """
+    def lookup(self, key):
+        if key not in self.__query_elements__:
+            return None
+        else:
+            return self.__query_elements__[key]
+    
+
+    def __get_task_command__(self, task):
+        params = []
+        for param in task.params:
+            if type(param) == VirtualDataObject:
+                params.append(param.abspath)
+            else:
+                params.append(param)                                
+        command = "{} {}".format(task.command, ' '.join(params))
+        return command
+
 ##############################################################################
 
 class Task(object):
@@ -776,20 +845,27 @@ class DataTask(Task):
     def __init__(self, id, vdo_src, vdo_dest, datatask_type=MOVER):
         Task.__init__(self, command='', type=TaskType.DATA)        
         self.__id__ = id
+        self._datatask_type = None
         if datatask_type == DataTask.PREPARER:
             self.params = [vdo_dest.abspath]
             self.command = "mkdir -p"
+            self._datatask_type = DataTask.PREPARER
         elif datatask_type == DataTask.MOVER:
             self.params = [vdo_src, vdo_dest]
             self.command = self.__set_data_mover__(vdo_src, vdo_dest)
+            self._datatask_type = DataTask.MOVER
         elif datatask_type == DataTask.CLEANER:
             self.params = [vdo_src]
             self.command = "rm -rRf"
+            self._datatask_type = DataTask.CLEANER
 
 
     def get_datatask_id(self):
         return self.__id__
 
+    @property
+    def datatask_type(self):
+        return self._datatask_type
 
     """
     data mover that copies data based on the storage tier

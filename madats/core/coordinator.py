@@ -35,31 +35,18 @@ def map(workflow, language='yaml', policy=Policy.NONE):
 
 
 """
-translate a VDS to a DAG
+unmap a VDS into a workflow DAG
 """
-"""
-def translate(vds):
-    dag = {}
-    for vdo in vds.vdos:
-        for prod in vdo.producers:
-            if prod not in dag:
-                dag[prod] = []
-            for cons in vdo.consumers:
-                '''
-                - add the dependencies for each task
-                - avoid self-dependencies to avoid deadlock  
-                '''
-                if cons not in dag[prod] and cons != prod:
-                    dag[prod].append(cons)
-                    cons.add_predecessor(prod)
-                    prod.add_successor(cons)
+def unmap(vds):
+    policy = vds.data_management_policy
+    if policy == Policy.WORKFLOW_AWARE:
+        data_manager.dm_workflow_aware(vds)
+    elif policy == Policy.STORAGE_AWARE:
+        data_manager.dm_storage_aware(vds)
 
-        for con in vdo.consumers:
-            if con not in dag:
-                dag[con] = []
-
+    dag = vds.get_task_dag()
     return dag
-"""
+
 
 """
 manage VDS by managing data as per the defined policy
@@ -73,31 +60,6 @@ def manage(vds, execute_mode=ExecutionMode.DAG):
     elif policy == Policy.STORAGE_AWARE:
         data_manager.dm_storage_aware(vds)
         
-    """
-    if vds.auto_cleanup:
-        vdos = vds.vdos
-        for vdo in vdos:
-            vds.create_cleanup_task(vdo)
-
-    dag = {}
-    for vdo in vds.vdos:
-        for prod in vdo.producers:
-            if prod not in dag:
-                dag[prod] = []
-            for cons in vdo.consumers:
-                '''
-                - add the dependencies for each task
-                - avoid self-dependencies to avoid deadlock  
-                '''
-                if cons not in dag[prod] and cons != prod:
-                    dag[prod].append(cons)
-                    cons.add_predecessor(prod)
-                    prod.add_successor(cons)
-
-        for con in vdo.consumers:
-            if con not in dag:
-                dag[con] = []
-    """
     dag = vds.get_task_dag()
     #print("**************")
     #workflow_manager.display(dag)
