@@ -102,6 +102,10 @@ class Policy(object):
     def type(name):
         return Policy.policy_type.get(name, Policy.NONE)
 
+    @staticmethod
+    def policies():
+        return Policy.policy_name
+
 
 """
 test main

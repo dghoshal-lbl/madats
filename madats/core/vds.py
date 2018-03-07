@@ -213,7 +213,7 @@ class VirtualDataObject(object):
         return total_size
 
 ######################################################################################
-class VirtualDataSpace():
+class VirtualDataSpace(object):
     """
     A virtual data space (VDS) abstraction that is a collection of virtual data objects (VDO)
 
@@ -238,7 +238,8 @@ class VirtualDataSpace():
         # basic lookup keys, more can be added later
         self.__query_elements__ = {'num_vdos': 0, 'data_tasks': 0, 'data_movements': 0,
                                    'preparer_tasks': 0, 'cleanup_tasks': 0,
-                                   'auto_cleanup': False, 'policy': None}
+                                   'auto_cleanup': False,
+                                   'policy': self._data_management_policy}
 
     @property
     def vdos(self):
@@ -567,6 +568,8 @@ class VirtualDataSpace():
 
     @auto_cleanup.setter
     def auto_cleanup(self, auto_cleanup):
+        self.__query_elements__['auto_cleanup'] = auto_cleanup
+        print("AUTO_CELANUP: {}".format(auto_cleanup))
         self._auto_cleanup = auto_cleanup
 
     '''
@@ -609,8 +612,11 @@ class VirtualDataSpace():
 
     @data_management_policy.setter
     def data_management_policy(self, policy):
-        ## TODO: type-check
-        self._data_management_policy = policy
+        if policy in Policy.policies():
+            self.__query_elements__['policy'] = policy
+            self._data_management_policy = policy
+        else:
+            print('Incorrect policy. Setting to default: {}'.format(Policy.name(self.__query_elements__['policy'])))
 
 
     """

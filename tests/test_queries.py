@@ -876,3 +876,325 @@ class Tester():
         input = ''.join(strdata)
         assert("{}".format(input) == output)
 
+
+################# TESTING THE CURRENT QUERY INTERFACE #################################
+
+    '''
+    TEST-1: Test a query on a simple workflow
+    '''
+    def test_query_1(self):
+        test_name = 'test_query_1'
+        datadir = os.path.join(self.scratch, test_name)
+        if not os.path.exists(datadir):
+            os.makedirs(datadir)
+        strdata = []
+        files = [os.path.join(datadir, 'in1'), os.path.join(datadir, 'in2'),
+                 os.path.join(datadir, 'inout1')]
+        for i in range(len(files) - 1):
+            strdata.append(self.__get_random_string__())
+            self.__create_file__(files[i], strdata[i])
+
+        # create a VDS
+        vds = madats.VirtualDataSpace()
+        
+        # create VDOs
+        vdo1 = madats.VirtualDataObject(files[0])
+        vdo2 = madats.VirtualDataObject(files[1])
+        vdo3 = madats.VirtualDataObject(files[2])
+
+        # create tasks
+        task1 = madats.Task(command='cat')
+        task1.params = [vdo1, vdo2, '>', vdo3]
+        task2 = madats.Task(command='cat')
+        task2.params = [vdo3]
+    
+        # define VDO and task associations
+        vdo1.consumers = [task1]
+        vdo2.consumers = [task1]
+        vdo3.producers = [task1]
+        vdo3.consumers = [task2]
+        vds.add(vdo1)
+        vds.add(vdo2)
+        vds.add(vdo3)
+        
+        assert(vds.count() == 3)
+        assert(len(vds.data()) == 3)
+        assert(len(vds.tasks()['compute']) == 2)
+        assert(len(vds.tasks()['data']) == 0)
+        assert(vds.lookup('random') == None)
+        assert(vds.lookup('auto_cleanup') == False)
+        assert(vds.lookup('policy') == madats.Policy.NONE)
+        # manage VDS
+        madats.manage(vds)
+
+        self.__assert_query_results__(vds, 3, 0, 0, 0, 0)
+
+        output = self.__get_file_data__(files[2])
+        input = ''.join(strdata)
+        assert("{}".format(input) == output)
+        
+
+    '''
+    TEST-2: Test the query interface for `workflow-aware` data management strategy in Madats
+    '''
+    def test_query_2(self):
+        test_name = 'test_query_2'
+        datadir = os.path.join(self.scratch, test_name)
+        if not os.path.exists(datadir):
+            os.makedirs(datadir)
+        strdata = []
+        files = [os.path.join(datadir, 'in1'), os.path.join(datadir, 'in2'),
+                 os.path.join(datadir, 'inout1')]
+        for i in range(len(files) - 1):
+            strdata.append(self.__get_random_string__())
+            self.__create_file__(files[i], strdata[i])
+
+        # create a VDS
+        vds = madats.VirtualDataSpace()
+        vds.data_management_policy = madats.Policy.WORKFLOW_AWARE
+        
+        # create VDOs
+        vdo1 = madats.VirtualDataObject(files[0])
+        vdo2 = madats.VirtualDataObject(files[1])
+        vdo3 = madats.VirtualDataObject(files[2])
+
+        # create tasks
+        task1 = madats.Task(command='cat')
+        task1.params = [vdo1, vdo2, '>', vdo3]
+        task2 = madats.Task(command='cat')
+        task2.params = [vdo3]
+    
+        # define VDO and task associations
+        vdo1.consumers = [task1]
+        vdo2.consumers = [task1]
+        vdo3.producers = [task1]
+        vdo3.consumers = [task2]
+        vds.add(vdo1)
+        vds.add(vdo2)
+        vds.add(vdo3)
+        
+        # manage VDS
+        madats.manage(vds)
+
+        # num_vdos = 4, only an additional dest directory + 3 vdos
+        # data_tasks = preparer_tasks = 1, data preparer task to create the dest directory
+        self.__assert_query_results__(vds, 4, 1, 0, 1, 0)
+        assert(vds.count() == 4)
+        assert(len(vds.data()) == 4)
+        assert(len(vds.tasks()['compute']) == 2)
+        assert(len(vds.tasks()['data']) == 1)
+        assert(vds.lookup('auto_cleanup') == False)
+        assert(vds.lookup('policy') == madats.Policy.WORKFLOW_AWARE)
+
+        stagein1 = os.path.join(self.burst, test_name, 'in1')
+        stagein2 = os.path.join(self.burst, test_name, 'in2')
+        intfile = os.path.join(self.burst, test_name, 'inout1')
+        # since it's workflow-aware, it only creates the intermediate file on fast burst tier
+        # there is no final output of the workflow as the second task only takes i/p and no o/p
+        assert(os.path.exists(intfile))
+        assert(not os.path.exists(stagein1))
+        assert(not os.path.exists(stagein2))
+        output = self.__get_file_data__(intfile)
+        input = ''.join(strdata)
+        assert("{}".format(input) == output)
+
+    
+    '''
+    TEST-3: Test the query interface for `storage-aware` data management strategy in Madats
+    '''
+    def test_query_3(self):
+        test_name = 'test_query_3'
+        datadir = os.path.join(self.scratch, test_name)
+        if not os.path.exists(datadir):
+            os.makedirs(datadir)
+        strdata = []
+        files = [os.path.join(datadir, 'in1'), os.path.join(datadir, 'in2'),
+                 os.path.join(datadir, 'inout1')]
+        for i in range(len(files) - 1):
+            strdata.append(self.__get_random_string__())
+            self.__create_file__(files[i], strdata[i])
+
+        # create a VDS
+        vds = madats.VirtualDataSpace()
+        vds.data_management_policy = madats.Policy.STORAGE_AWARE
+        
+        # create VDOs
+        vdo1 = madats.VirtualDataObject(files[0])
+        vdo2 = madats.VirtualDataObject(files[1])
+        vdo3 = madats.VirtualDataObject(files[2])
+
+        # create tasks
+        task1 = madats.Task(command='cat')
+        task1.params = [vdo1, vdo2, '>', vdo3]
+        task2 = madats.Task(command='cat')
+        task2.params = [vdo3]
+    
+        # define VDO and task associations
+        vdo1.consumers = [task1]
+        vdo2.consumers = [task1]
+        vdo3.producers = [task1]
+        vdo3.consumers = [task2]
+        vds.add(vdo1)
+        vds.add(vdo2)
+        vds.add(vdo3)
+        
+        # manage VDS
+        madats.manage(vds)
+
+        # num_vdos = 6, 2 stageins + 1 dest dir + 3 vdos
+        # data_tasks = 3, 2 stageins + 1 preparer
+        # data_movements = 2, 2 stageins
+        # preparer_tasks = 1, dest dir
+        self.__assert_query_results__(vds, 6, 3, 2, 1, 0)
+        assert(vds.count() == 6)
+        assert(len(vds.data()) == 6)
+        assert(len(vds.tasks()['compute']) == 2)
+        assert(len(vds.tasks()['data']) == 3)
+        assert(vds.lookup('auto_cleanup') == False)
+        assert(vds.lookup('policy') == madats.Policy.STORAGE_AWARE)
+
+        stagein1 = os.path.join(self.burst, test_name, 'in1')
+        stagein2 = os.path.join(self.burst, test_name, 'in2')
+        intfile = os.path.join(self.burst, test_name, 'inout1')
+        # since it's storage-aware, it creates the intermediate file and stages in all the
+        # inputs on fast burst tier
+        # there is no final output of the workflow as the second task only takes i/p and no o/p
+        assert(os.path.exists(intfile))
+        assert(os.path.exists(stagein1))
+        assert(os.path.exists(stagein2))
+        output = self.__get_file_data__(intfile)
+        input = ''.join(strdata)
+        assert("{}".format(input) == output)
+
+    
+    '''
+    TEST-4: Test the query interface to check the auto_cleanup option in Madats
+    '''
+    def test_query_4(self):
+        test_name = 'test_query_4'
+        datadir = os.path.join(self.scratch, test_name)
+        if not os.path.exists(datadir):
+            os.makedirs(datadir)
+        strdata = []
+        files = [os.path.join(datadir, 'in1'), os.path.join(datadir, 'in2'),
+                 os.path.join(datadir, 'inout'), os.path.join(datadir, 'out')]
+        for i in range(len(files) - 2):
+            strdata.append(self.__get_random_string__())
+            self.__create_file__(files[i], strdata[i])
+
+        # create a VDS
+        vds = madats.VirtualDataSpace()
+        vds.data_management_policy = madats.Policy.STORAGE_AWARE
+        vds.auto_cleanup = True
+        
+        # create VDOs
+        vdo1 = madats.VirtualDataObject(files[0])
+        vdo2 = madats.VirtualDataObject(files[1])
+        vdo3 = madats.VirtualDataObject(files[2])
+        vdo4 = madats.VirtualDataObject(files[3])
+
+        # create tasks
+        task1 = madats.Task(command='cat')
+        task1.params = [vdo1, vdo2, '>', vdo3]
+        task2 = madats.Task(command='cat')
+        task2.params = [vdo3, '>', vdo4]
+    
+        # define VDO and task associations
+        vdo1.consumers = [task1]
+        vdo2.consumers = [task1]
+        vdo3.producers = [task1]
+        vdo3.consumers = [task2]
+        vdo4.producers = [task2]
+        vds.add(vdo1)
+        vds.add(vdo2)
+        vds.add(vdo3)
+        vds.add(vdo4)
+        
+        # manage VDS
+        madats.manage(vds)
+
+        # num_vdos = 13, 2 stageins + 2 dirs + 1 stageout + 4 vdos + 4 dummy (cleanup)
+        self.__assert_query_results__(vds, 13, 9, 3, 2, 4)
+        assert(vds.count() == 13)
+        assert(len(vds.data()) == 13)
+        assert(len(vds.tasks()['compute']) == 2)
+        assert(len(vds.tasks()['data']) == 9)
+        assert(vds.auto_cleanup == True)
+        assert(vds.lookup('auto_cleanup') == True)
+        assert(vds.lookup('policy') == madats.Policy.STORAGE_AWARE)
+
+        stagein1 = os.path.join(self.burst, test_name, 'in1')
+        stagein2 = os.path.join(self.burst, test_name, 'in2')
+        intfile = os.path.join(self.burst, test_name, 'inout')
+        # since it's storage-aware with auto-cleanup, it creates the intermediate file
+        # and stages in all the inputs on fast burst tier and then deletes them as they are used
+        # there is no final output of the workflow as the second task only takes i/p and no o/p
+        assert(not os.path.exists(intfile))
+        assert(not os.path.exists(stagein1))
+        assert(not os.path.exists(stagein2))
+        assert(not os.path.exists(files[2]))
+        output = self.__get_file_data__(files[3])
+        input = ''.join(strdata)
+        assert("{}".format(input) == output)
+
+
+    '''
+    TEST-5: Test through the query interface that the default data management policy
+    is set when a policy that's not defined in Madats is specified by the user
+    '''
+    def test_query_5(self):
+        test_name = 'test_query_5'
+        datadir = os.path.join(self.scratch, test_name)
+        if not os.path.exists(datadir):
+            os.makedirs(datadir)
+        strdata = []
+        files = [os.path.join(datadir, 'in1'), os.path.join(datadir, 'in2'),
+                 os.path.join(datadir, 'inout'), os.path.join(datadir, 'out')]
+        for i in range(len(files) - 2):
+            strdata.append(self.__get_random_string__())
+            self.__create_file__(files[i], strdata[i])
+
+        # create a VDS
+        vds = madats.VirtualDataSpace()
+        vds.data_management_policy = 'Random'
+        vds.auto_cleanup = True
+        
+        # create VDOs
+        vdo1 = madats.VirtualDataObject(files[0])
+        vdo2 = madats.VirtualDataObject(files[1])
+        vdo3 = madats.VirtualDataObject(files[2])
+        vdo4 = madats.VirtualDataObject(files[3])
+
+        # create tasks
+        task1 = madats.Task(command='cat')
+        task1.params = [vdo1, vdo2, '>', vdo3]
+        task2 = madats.Task(command='cat')
+        task2.params = [vdo3, '>', vdo4]
+    
+        # define VDO and task associations
+        vdo1.consumers = [task1]
+        vdo2.consumers = [task1]
+        vdo3.producers = [task1]
+        vdo3.consumers = [task2]
+        vdo4.producers = [task2]
+        vds.add(vdo1)
+        vds.add(vdo2)
+        vds.add(vdo3)
+        vds.add(vdo4)
+        
+        # manage VDS
+        madats.manage(vds)
+
+        assert(vds.lookup('auto_cleanup') == True)
+        # although some random policy is specified, if it's not define in madats,
+        # the policy is set to the default (NONE)
+        assert(vds.lookup('policy') == madats.Policy.NONE)
+
+        stagein1 = os.path.join(self.burst, test_name, 'in1')
+        stagein2 = os.path.join(self.burst, test_name, 'in2')
+        intfile = os.path.join(self.burst, test_name, 'inout')
+        output = self.__get_file_data__(files[3])
+        input = ''.join(strdata)
+        assert("{}".format(input) == output)
+
+ 
