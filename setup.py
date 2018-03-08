@@ -58,7 +58,7 @@ def __write_yaml__(data, yaml_file):
         yaml.dump(data, f, default_flow_style=False)
 
 setup(name='MaDaTS',
-      version='0.1.1',
+      version='1.1.2',
       description='Managing Data on Tiered Storage for Scientific Workflows',
       author='Devarshi Ghoshal',
       author_email='dghoshal@lbl.gov',
