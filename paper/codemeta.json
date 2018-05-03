@@ -1,0 +1,18 @@
+{
+  "@context": "https://raw.githubusercontent.com/mbjones/codemeta/master/codemeta.jsonld",
+  "@type": "Code",
+  "author": [
+  "Devarshi Ghoshal",
+  "Lavanya Ramakrishnan"
+  ],
+  "identifier": "",
+  "codeRepository": "uda.lbl.gov",
+  "datePublished": "2018-02-21",
+  "dateModified": "2018-02-21",
+  "dateCreated": "2018-02-21",
+  "description": "Managing Data on Tiered Storage for Scientific Workflows",
+  "keywords": "scientific workflows, data management, multi-tiered storage, high performance computing",
+  "license": "BSD",
+  "title": "MaDaTS: Managing Data on Tiered Storage for Scientific Workflows",
+  "version": "v1.1.1"
+}
