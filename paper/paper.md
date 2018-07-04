@@ -10,11 +10,14 @@ tags:
 authors:
  - name: Devarshi Ghoshal
    orcid: 0000-0002-6819-6949
-   affiliation: Lawrence Berkeley National Lab
+   affiliation: 1
  - name: Lavanya Ramakrishnan
    orcid: 0000-0003-1761-4132
-   affiliation: Lawrence Berkeley National Lab
-date: 20 Feb 2018
+   affiliation: 1
+affiliations:
+ - name: Lawrence Berkeley National Lab
+   index: 1
+date: 04 July 2018
 bibliography: paper.bib
 ---
 
