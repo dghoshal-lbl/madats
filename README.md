@@ -125,7 +125,7 @@ batch schedulers by specifying the respective configuration files.
 
 LICENSE
 -------
-3-Clause BSD License
+3-Clause BSD License.
 Copyright (c) 2018, The Regents of the University of California,
 through Lawrence Berkeley National Laboratory (subject to receipt
 of any required approvals from the U.S. Dept. of Energy). All rights
