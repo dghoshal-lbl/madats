@@ -34,9 +34,23 @@ To install MaDaTS, do:
         pip install -r requirements.txt
         python setup.py install
 
+
+EXECUTION SETUP
+---------------
 The environment variable `MADATS_HOME` should be set prior to using MaDaTS.
 The setup script creates a MADATS_HOME file that can be sourced prior to
-using MaDaTS to set the environment variable `MADATS_HOME`.
+using MaDaTS as:
+
+       source MADATS_HOME
+
+Alternatively, users can set `MADATS_HOME` as:
+
+       # BASH / ZSH
+       export MADATS_HOME=</path/to/madats/source/directory>
+
+       # CSH / TCSH
+       setenv MADATS_HOME </path/to/madats/source/directory>
+
 
 TEST
 -----
@@ -108,3 +122,11 @@ MaDaTS currently supports PBS and SLURM batch schedulers for managing workflow t
 batch jobs. The various options for the batch schedulers are specified in their respective
 configuration files `config/pbs.cfg` and `config/slurm.cfg`. Users can also add their own
 batch schedulers by specifying the respective configuration files.
+
+LICENSE
+-------
+3-Clause BSD License
+Copyright (c) 2018, The Regents of the University of California,
+through Lawrence Berkeley National Laboratory (subject to receipt
+of any required approvals from the U.S. Dept. of Energy). All rights
+reserved.
