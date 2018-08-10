@@ -73,7 +73,7 @@ setup(name='MaDaTS',
                    'Operating System :: OS Independent',
                    'Programming Language :: Python :: 2.7',
                    'Topic :: Scientific/Engineering',
-                   'License :: OSI Approved :: BSD License'
+                   'License :: OSI Approved :: 3-clause BSD License'
       ],
       install_requires=install_deps,
       entry_points={'console_scripts': ['madats = madats.cli:main']},
