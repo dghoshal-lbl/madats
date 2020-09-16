@@ -30,15 +30,15 @@ given a workflow, map it to VDS
 """
 def map(workflow, language='yaml', policy=Policy.NONE):
     vds = workflow_manager.parse(workflow, language)
-    vds.data_management_policy = policy
+    vds.strategy = policy
     return vds
 
 
 """
 unmap a VDS into a workflow DAG
 """
-def unmap(vds):
-    policy = vds.data_management_policy
+def get_workflow_dag(vds):
+    policy = vds.strategy
     if policy == Policy.WORKFLOW_AWARE:
         data_manager.dm_workflow_aware(vds)
     elif policy == Policy.STORAGE_AWARE:

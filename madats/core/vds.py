@@ -230,7 +230,7 @@ class VirtualDataSpace(object):
         self.__vdo_dict__ = {}
         self._vdos = []
         self.datapaths = {}
-        self._data_management_policy = Policy.NONE
+        self._strategy = Policy.NONE
         self._storage_tiers = {}
         self.__datatasks__ = {}
         self._auto_cleanup = False
@@ -239,7 +239,7 @@ class VirtualDataSpace(object):
         self.__query_elements__ = {'num_vdos': 0, 'data_tasks': 0, 'data_movements': 0,
                                    'preparer_tasks': 0, 'cleanup_tasks': 0,
                                    'auto_cleanup': False,
-                                   'policy': self._data_management_policy}
+                                   'policy': self._strategy}
 
     @property
     def vdos(self):
@@ -542,7 +542,7 @@ class VirtualDataSpace(object):
     '''
     def __create_cleanup_task__(self, vdo):
         if not vdo.persist and vdo.__is_temporary__:
-            print("******* Path {} will be removed ******".format(vdo.abspath, vdo.persist))
+            print("******* Path {} will be removed ******".format(vdo.abspath))
             dummy_vdo_path = vdo.abspath + '.deleted'
             dummy_vdo = self.map(dummy_vdo_path)
             dt_id = self.__get_datatask_id__(vdo, dummy_vdo)
@@ -569,7 +569,7 @@ class VirtualDataSpace(object):
     @auto_cleanup.setter
     def auto_cleanup(self, auto_cleanup):
         self.__query_elements__['auto_cleanup'] = auto_cleanup
-        print("AUTO_CELANUP: {}".format(auto_cleanup))
+        #print("AUTO_CELANUP: {}".format(auto_cleanup))
         self._auto_cleanup = auto_cleanup
 
     '''
@@ -604,19 +604,19 @@ class VirtualDataSpace(object):
 
 
     '''
-    data management policy is a VDS property that defines data movement policies in the VDS
+    strategy is a VDS property that defines data movement policies in the VDS
     '''
     @property
-    def data_management_policy(self):
-        return self._data_management_policy
+    def strategy(self):
+        return self._strategy
 
-    @data_management_policy.setter
-    def data_management_policy(self, policy):
-        if policy in Policy.policies():
-            self.__query_elements__['policy'] = policy
-            self._data_management_policy = policy
+    @strategy.setter
+    def strategy(self, strategy):
+        if strategy in Policy.policies():
+            self.__query_elements__['policy'] = strategy
+            self._strategy = strategy
         else:
-            print('Incorrect policy. Setting to default: {}'.format(Policy.name(self.__query_elements__['policy'])))
+            print('Incorrect data management strategy. Setting to default: {}'.format(Policy.name(self.__query_elements__['policy'])))
 
 
     """

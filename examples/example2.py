@@ -18,9 +18,9 @@ def main():
     datadir = '/scratch/scratchdirs/cscratch1'
     # create a VDS
     vds = VirtualDataSpace()
-    vds.data_management_policy = Policy.WORKFLOW_AWARE
+    vds.strategy = Policy.WORKFLOW_AWARE
     vds.auto_cleanup = True
-    print('Data management policy: {}'.format(Policy.name(vds.data_management_policy)))
+    print('Data management policy: {}'.format(Policy.name(vds.strategy)))
 
     # create VDOs
     vdo1 = VirtualDataObject(os.path.join(datadir, 'in1'))

@@ -219,7 +219,7 @@ class Tester():
 
         # create a VDS
         vds = madats.VirtualDataSpace()
-        vds.data_management_policy = madats.Policy.WORKFLOW_AWARE
+        vds.strategy = madats.Policy.WORKFLOW_AWARE
         
         # create VDOs
         vdo1 = madats.VirtualDataObject(files[0])
@@ -278,7 +278,7 @@ class Tester():
 
         # create a VDS
         vds = madats.VirtualDataSpace()
-        vds.data_management_policy = madats.Policy.STORAGE_AWARE
+        vds.strategy = madats.Policy.STORAGE_AWARE
         
         # create VDOs
         vdo1 = madats.VirtualDataObject(files[0])
@@ -342,7 +342,7 @@ class Tester():
 
         # create a VDS
         vds = madats.VirtualDataSpace()
-        vds.data_management_policy = madats.Policy.WORKFLOW_AWARE
+        vds.strategy = madats.Policy.WORKFLOW_AWARE
         
         # create VDOs
         vdo1 = madats.VirtualDataObject(files[0])
@@ -415,7 +415,7 @@ class Tester():
 
         # create a VDS
         vds = madats.VirtualDataSpace()
-        vds.data_management_policy = madats.Policy.STORAGE_AWARE
+        vds.strategy = madats.Policy.STORAGE_AWARE
         
         # create VDOs
         vdo1 = madats.VirtualDataObject(files[0])
@@ -494,7 +494,7 @@ class Tester():
 
         # create a VDS
         vds = madats.VirtualDataSpace()
-        vds.data_management_policy = madats.Policy.STORAGE_AWARE
+        vds.strategy = madats.Policy.STORAGE_AWARE
         vds.auto_cleanup = True
         
         # create VDOs
@@ -558,7 +558,7 @@ class Tester():
 
         # create a VDS
         vds = madats.VirtualDataSpace()
-        vds.data_management_policy = madats.Policy.STORAGE_AWARE
+        vds.strategy = madats.Policy.STORAGE_AWARE
         vds.auto_cleanup = True
         
         # create VDOs
@@ -624,7 +624,7 @@ class Tester():
 
         # create a VDS
         vds = madats.VirtualDataSpace()
-        vds.data_management_policy = madats.Policy.STORAGE_AWARE
+        vds.strategy = madats.Policy.STORAGE_AWARE
         
         # create VDOs
         vdo1 = madats.VirtualDataObject(files[0])
@@ -690,7 +690,7 @@ class Tester():
 
         # create a VDS
         vds = madats.VirtualDataSpace()
-        vds.data_management_policy = madats.Policy.STORAGE_AWARE
+        vds.strategy = madats.Policy.STORAGE_AWARE
         
         # create VDOs
         vdo1 = madats.VirtualDataObject(files[0])
@@ -760,7 +760,7 @@ class Tester():
 
         # create a VDS
         vds = madats.VirtualDataSpace()
-        vds.data_management_policy = madats.Policy.STORAGE_AWARE
+        vds.strategy = madats.Policy.STORAGE_AWARE
         
         # create VDOs
         vdo1 = madats.VirtualDataObject(files[0])
@@ -825,7 +825,7 @@ class Tester():
 
         # create a VDS
         vds = madats.VirtualDataSpace()
-        vds.data_management_policy = madats.Policy.STORAGE_AWARE
+        vds.strategy = madats.Policy.STORAGE_AWARE
         
         # create VDOs
         vdo1 = madats.VirtualDataObject(files[0])
@@ -951,7 +951,7 @@ class Tester():
 
         # create a VDS
         vds = madats.VirtualDataSpace()
-        vds.data_management_policy = madats.Policy.WORKFLOW_AWARE
+        vds.strategy = madats.Policy.WORKFLOW_AWARE
         
         # create VDOs
         vdo1 = madats.VirtualDataObject(files[0])
@@ -1016,7 +1016,7 @@ class Tester():
 
         # create a VDS
         vds = madats.VirtualDataSpace()
-        vds.data_management_policy = madats.Policy.STORAGE_AWARE
+        vds.strategy = madats.Policy.STORAGE_AWARE
         
         # create VDOs
         vdo1 = madats.VirtualDataObject(files[0])
@@ -1084,7 +1084,7 @@ class Tester():
 
         # create a VDS
         vds = madats.VirtualDataSpace()
-        vds.data_management_policy = madats.Policy.STORAGE_AWARE
+        vds.strategy = madats.Policy.STORAGE_AWARE
         vds.auto_cleanup = True
         
         # create VDOs
@@ -1156,7 +1156,7 @@ class Tester():
 
         # create a VDS
         vds = madats.VirtualDataSpace()
-        vds.data_management_policy = 'Random'
+        vds.strategy = 'Random'
         vds.auto_cleanup = True
         
         # create VDOs

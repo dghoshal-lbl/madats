@@ -1,5 +1,5 @@
 from madats.core.vds import VirtualDataSpace, VirtualDataObject, Task
-from madats.core.coordinator import map, unmap, manage, validate, query
+from madats.core.coordinator import map, get_workflow_dag, manage, validate, query
 from madats.core.scheduler import Scheduler
 from madats.core.storage import get_data_id, get_path_elements, build_data_path, get_storage_tiers, get_selected_storage
 from madats.management.data_manager import dm_workflow_aware, dm_storage_aware
