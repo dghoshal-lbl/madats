@@ -54,7 +54,7 @@ manage VDS by managing data as per the defined policy
  - manage the workflow consisting of data and compute tasks
 """
 def manage(vds, execute_mode=ExecutionMode.DAG):
-    policy = vds.data_management_policy
+    policy = vds.strategy
     # identify the task dependencies before applying the data mangement strategy
     # the data movements will come into effect based on the the data-task dependencies
     dag = vds.get_task_dag()
