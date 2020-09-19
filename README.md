@@ -2,9 +2,9 @@
 MaDaTS: Managing Data on Tiered Storage for Scientific Workflows
 
 * Author: Devarshi Ghoshal
-* v1.1.2
+* v1.1.3
 * Created: Oct 25, 2016
-* Updated: Feb 21, 2018
+* Updated: Sep 16, 2020
 **************************************************************************
 
 MaDaTS provides an integrated data management and workflow execution
