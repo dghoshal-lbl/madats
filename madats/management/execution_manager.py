@@ -95,11 +95,11 @@ def submit(script, scheduler):
         output = subprocess.check_output([submit_command], shell=True)
         if scheduler != Scheduler.NONE:
             output = monitor(output, scheduler)
-
         return output
     except Exception as e:
         print("Job submission error:")
         print(e)
+        return str(e)
 
 
 """
@@ -109,15 +109,19 @@ def monitor(job_id, scheduler):
     #query_command = "{} | grep {} | awk '{{print $1}}'".format(Scheduler.status_command(scheduler), job_id)
     #query_command = "{} | grep {} ".format(Scheduler.status_command(scheduler), job_id)
     query_command = Scheduler.status_command(scheduler)
-
+    output = []
     try:
         result = subprocess.check_output([query_command], shell=True)
+        output.append(result)
         while result.find(job_id) >= 0:
             time.sleep(1)
             result = subprocess.check_output([query_command], shell=True)
+            output.append(result)
     except Exception as e:
         print("Job monitoring error:")
         print(e)
+    finally:
+        return '\n'.join(output)
     
 
 """
@@ -266,50 +270,4 @@ def execute(dag, mode=ExecutionMode.DAG):
         dependency_execution(dag)
     else:
         print("Workflow execution mode ({}) not implemented!".format(mode))
-    
-
-'''
-test main
-'''
-if __name__ == '__main__':
-    task1 = Task()
-    task1.command = 'echo'
-    task1.params = ['hello']
-
-    task2 = Task()
-    task2.command = 'echo'
-    task2.params = ['world1']
-
-    task3 = Task()
-    task3.command = 'echo'
-    task3.params = ['world2']
-
-    task4 = Task()
-    task4.command = 'echo'
-    task4.params = ['world1-world2']
-
-    task1.add_successor(task2)
-    task1.add_successor(task3)
-    task2.add_predecessor(task1)
-    task3.add_predecessor(task1)
-    task4.add_predecessor(task2)
-    task4.add_predecessor(task3)
-    task2.add_successor(task4)
-    task3.add_successor(task4)
-
-    dag = {}
-    #dag[task2] = [task1]
-    #dag[task3] = [task1]
-    #dag[task4] = [task2, task3]
-
-    dag[task1] = [task2, task3]
-    dag[task2] = [task4]
-    dag[task3] = [task4]
-    dag[task4] = []
-
-    execute(dag)
-
-    
-
-        
     

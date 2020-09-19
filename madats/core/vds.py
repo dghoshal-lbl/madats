@@ -894,14 +894,15 @@ class DataTask(Task):
             # vdo_src and vdo_dest params work in general
             # through the execution manager, which appends
             # the task inputs at the end of the command
-            command = 'mkdir -p {}; cd {}; hsi -q "prompt; mget {}"; ls'.format(dest_dir, vdo_dest.abspath, vdo_src.abspath)
+            command = 'mkdir -p {}; cd {}; hsi -q "prompt; mget {}"; ls'.format(dest_directory, vdo_dest.abspath, vdo_src.abspath)
         elif vdo_dest.storage_id == 'archive':
             src_dir = os.path.dirname(vdo_src.abspath)
             filename = os.path.basename(vdo_dest.abspath)
-            command = 'cd {}; hsi -q "prompt; mkdir -p {}; cd {}; mput {}"; ls'.format(src_dir, dest_dir, dest_dir, filename)
+            command = 'cd {}; hsi -q "prompt; mkdir -p {}; cd {}; mput {}"; ls'.format(src_dir, dest_directory, dest_directory, filename)
         else:
             #command = 'mkdir -p {}; cp -R'.format(dest_directory)
-            command = 'cp -R'.format(dest_directory)
+            #command = 'cp -R'.format(dest_directory)
+            command = 'cp -R'
 
         return command
         

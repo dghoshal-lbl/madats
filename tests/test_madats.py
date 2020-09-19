@@ -67,7 +67,7 @@ class Tester():
 
     def __create_file__(self, filepath, content=None):
         if not content:
-            data = fname
+            data = filepath
         else:
             data = content
 
