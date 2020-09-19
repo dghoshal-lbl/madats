@@ -106,31 +106,31 @@ from madats.core import storage
 #                    task.inputs[i] = vdo_dest            
 #        vds.delete(vdo_src)
 
-"""
-workflow-aware data management: data is moved only when there is an overlap
-between computation and data transfer steps.
-"""
-def dm_workflow_aware(vds):    
-    fast_tier = storage.get_selected_storage()
-    '''
-    create a shallow copy of the VDO list, because new VDOs will be added to VDS now
-    '''
-    vdos = [v for v in vds.vdos]
-    '''
-    if a VDO's consumer has predecessors, or if a VDO's producer has successors,
-    then the VDO can be moved and used from another storage tier
-    '''
-    for vdo in vdos:
-        if len(vdo.producers) > 0 and len(vdo.consumers) > 0:
-            new_vdo = vds.copy(vdo, fast_tier)
-            #vds.create_data_task(vdo, new_vdo)
+# """
+# workflow-aware data management: data is moved only when there is an overlap
+# between computation and data transfer steps.
+# """
+# def dm_workflow_aware(vds):    
+#     fast_tier = storage.get_selected_storage()
+#     '''
+#     create a shallow copy of the VDO list, because new VDOs will be added to VDS now
+#     '''
+#     vdos = [v for v in vds.vdos]
+#     '''
+#     if a VDO's consumer has predecessors, or if a VDO's producer has successors,
+#     then the VDO can be moved and used from another storage tier
+#     '''
+#     for vdo in vdos:
+#         if len(vdo.producers) > 0 and len(vdo.consumers) > 0:
+#             new_vdo = vds.copy(vdo, fast_tier)
+#             #vds.create_data_task(vdo, new_vdo)
         
 
 """
 workflow-aware data management: data is moved only when there is an overlap
 between computation and data transfer steps.
 """
-def dm_workflow_aware1(vds):    
+def dm_workflow_aware(vds):   
     fast_tier = storage.get_selected_storage()
     '''
     create a shallow copy of the VDO list, because new VDOs will be added to VDS now

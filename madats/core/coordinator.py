@@ -55,15 +55,19 @@ manage VDS by managing data as per the defined policy
 """
 def manage(vds, execute_mode=ExecutionMode.DAG):
     policy = vds.data_management_policy
+    # identify the task dependencies before applying the data mangement strategy
+    # the data movements will come into effect based on the the data-task dependencies
+    dag = vds.get_task_dag()
     if policy == Policy.WORKFLOW_AWARE:
         data_manager.dm_workflow_aware(vds)
     elif policy == Policy.STORAGE_AWARE:
         data_manager.dm_storage_aware(vds)
         
+    # get the extended workflow with data and compute tasks
     dag = vds.get_task_dag()
-    #print("**************")
-    #workflow_manager.display(dag)
-    #print("**************")
+    # print("**************")
+    # workflow_manager.display(dag)
+    # print("**************")
 
     execution_manager.execute(dag, execute_mode) 
 
