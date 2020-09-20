@@ -17,6 +17,56 @@ except:
     from six.moves import configparser
 import os
 import sys
+import logging
+import logging.config
+import yaml
+
+
+def _get_logging_info():
+    config_dict = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'simple': {
+                'format': "%(asctime)s:%(levelname)s:%(message)s"
+            }
+        },
+        'handlers': {
+            'console': {
+                'level': logging.INFO,
+                'class': 'logging.StreamHandler',
+                'formatter': 'simple',
+                'stream': 'ext://sys.stdout'
+            }
+        },
+        'root': {
+            'handlers': ['console'],
+            'level': logging.INFO
+        }
+    }
+
+    return config_dict
+
+
+def _setup_logging(log_config, log_level):
+    if os.path.exists(log_config):
+        with open(log_config, 'rt') as f:
+            config = yaml.safe_load(f.read())
+            logging.config.dictConfig(config)
+    else:
+        logging.basicConfig(stream=sys.stdout, level=log_level)
+
+
+def _init_log():
+    log_file = os.path.expandvars('$MADATS_HOME/config/logging.yaml')
+    if not os.path.exists(log_file):
+        with open(log_file, 'w') as f:
+            config_dict = _get_logging_info()
+            yaml.dump(config_dict, f)
+    log_config = log_file
+    log_level = logging.INFO
+    _setup_logging(log_config, log_level)
+
 
 class Config():
     """
@@ -46,10 +96,10 @@ class PropertyConfig():
 
         config_file = os.path.expandvars('$MADATS_HOME/config/config.cfg')
         #print('Reading config file: {}'.format(config_file))
-        config = Config(config_file)
-        self._short_term = config.get('persistence', 'shortterm')
-        self._long_term = config.get('persistence', 'longterm')
-        self._fixed_term = config.get('persistence', 'fixedterm')
+        self.config = Config(config_file)
+        self._short_term = self.config.get('persistence', 'shortterm')
+        self._long_term = self.config.get('persistence', 'longterm')
+        self._fixed_term = self.config.get('persistence', 'fixedterm')
 
     @property
     def SHORT_TERM(self):
@@ -65,15 +115,15 @@ class PropertyConfig():
 
     @SHORT_TERM.setter
     def SHORT_TERM(self):
-        self._short_term = config.get('persistence', 'shortterm')
+        self._short_term = self.config.get('persistence', 'shortterm')
 
     @LONG_TERM.setter
     def LONG_TERM(self):
-        self._long_term = config.get('persistence', 'longterm')
+        self._long_term = self.config.get('persistence', 'longterm')
 
     @FIXED_TERM.setter
     def FIXED_TERM(self):
-        self._fixed_term = config.get('persistence', 'fixedterm')
+        self._fixed_term = self.config.get('persistence', 'fixedterm')
 
 
 class SchedulerConfig():
@@ -140,3 +190,5 @@ property_config = PropertyConfig()
 # scheduler configuration objects
 slurm_config = SchedulerConfig('slurm')
 pbs_config = SchedulerConfig('pbs')
+
+_init_log()

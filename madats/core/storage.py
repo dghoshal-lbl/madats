@@ -17,10 +17,16 @@ import yaml
 import sys
 import filecmp
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 class StorageHierarchy(object):
     def __init__(self):
         storage_config = os.path.expandvars('$MADATS_HOME/config/storage.yaml')
-        #print('Reading storage config: {}'.format(storage_config))                
+        #print('Reading storage config: {}'.format(storage_config))      
+        logger.debug('Reading storage config ({})'.format(storage_config))          
         self._hierarchy = self.parse(storage_config)
         self._mount_points = {}
         for k,v in self._hierarchy.items():
@@ -38,10 +44,12 @@ class StorageHierarchy(object):
                 if system_name in storage_yaml:
                     return self.__get_storage_hierarchy__(storage_yaml[system_name])
                 else:
-                    print('No storage configuration specified for system {}'.format(system_name))
+                    # print('No storage configuration specified for system {}'.format(system_name))
+                    logger.error('No storage configuration specified for system {}'.format(system_name))
                     sys.exit()
             else:
-                print('No system specified for storage configuration')
+                # print('No system specified for storage configuration')
+                logger.error('No system specified for storage configuration')
                 sys.exit()
                 
 
@@ -63,7 +71,8 @@ class StorageHierarchy(object):
             
     def get_mount_point(self, storage_id):
         if storage_id not in self._hierarchy:
-            print('Storage-id ({}) is not defined!'.format(storage_id))
+            # print('Storage-id ({}) is not defined!'.format(storage_id))
+            logger.warn('Storage-id ({}) is not defined!'.format(storage_id))
             return None
         else:
             return self._hierarchy[storage_id]['mount']
@@ -84,13 +93,14 @@ class StorageHierarchy(object):
         if the mount point is not present in the storage.yaml configuration,
         assign defaults
         '''
-        print('Storage-id not set for mount point {}'.format(path))
+        # print('Storage-id not set for mount point {}'.format(path))
+        logger.warn('Storage-id not set for mount point {}'.format(path))
         default_id = path.replace('/', '_')
         if default_id == '_':
             default_id = 'root'                
 
-        # this should be Log.INFO, once logging framework is implemented
-        print('Defaulting storage-id for the mount point to {}'.format(default_id))
+        # print('Defaulting storage-id for the mount point to {}'.format(default_id))
+        # logger.warn('Defaulting storage-id for the mount point to {}'.format(default_id))
         '''
         if the path resolves to the root directory, then the mount-point
         possibly doesn't exist on the system yet; hence, assign 'root'
@@ -195,7 +205,6 @@ def get_selected_storage(property='bandwidth'):
 """
 if the two datapaths have changed, then the data is stale 
 - uses a simple logic using python's filecmp module
-`POTENTIALLY A USE-CASE FOR DEDUCE`
 """
 def is_same(datapath1, datapath2):
     if not os.path.exists(datapath1) or not os.path.exists(datapath2):
@@ -217,11 +226,3 @@ def is_same(datapath1, datapath2):
     
     return filecmp.cmp(datapath1, datapath2, shallow=False)
 
-
-if __name__ == '__main__':
-    d1 = '/home/dghoshal/dir1'
-    d2 = '/Volumes/MobileBackups/Backups.backupdb'
-    d3 = '/scratch/scratchdirs/cscratch1/dghoshal'
-    print("{}: {}".format(d1, get_path_elements(d1)))
-    print("{}: {}".format(d2, get_path_elements(d2)))
-    print("{}: {}".format(d3, get_path_elements(d3)))

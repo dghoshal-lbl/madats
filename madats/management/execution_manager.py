@@ -26,6 +26,9 @@ import subprocess
 import uuid
 from madats.utils.constants import ExecutionMode, TaskType
 import shutil
+import logging
+
+logger = logging.getLogger(__name__)
 
 result_list = []
 taskmap = {}
@@ -38,6 +41,7 @@ outdir = os.path.expandvars('$MADATS_HOME/outdir')
 workers processing the workflow tasks/stages
 """
 def worker(taskq):
+    # logger = logging.getLogger(__name__)
     while True:
         try:
             task = taskq.get()
@@ -67,9 +71,11 @@ def worker(taskq):
                     param_list.append(param)
 
             params = " ".join(param_list)    
-            print("** Submitted: {} {}".format(task.command, params))
+            #print("** Submitted: {} {}".format(task.command, params))
+            logger.info('Submitted {} {}'.format(task.command, params))
             result = submit(job_script, task.scheduler)
-            print("** Finished: {} {}".format(task.command, params))
+            #print("** Finished: {} {}".format(task.command, params))
+            logger.info('Completed {} {}'.format(task.command, params))
             #print("[Workflow-{}] Finished {} task-{}".format(_workflow_id, TaskType.name(task.type), task.__id__))
             
             '''
@@ -90,6 +96,7 @@ def worker(taskq):
 submit a script for execution
 """
 def submit(script, scheduler):
+    # logger = logging.getLogger(__name__)
     submit_command = "{} {}".format(Scheduler.submit_command(scheduler), script)
     try:
         output = subprocess.check_output([submit_command], shell=True)
@@ -97,8 +104,9 @@ def submit(script, scheduler):
             output = monitor(output, scheduler)
         return output
     except Exception as e:
-        print("Job submission error:")
-        print(e)
+        # print("Job submission error:")
+        # print(e)
+        logger.error('Job submission error: {}'.format(e))
         return str(e)
 
 
@@ -106,6 +114,7 @@ def submit(script, scheduler):
 monitor a batch job script
 """
 def monitor(job_id, scheduler):
+    # logger = logging.getLogger(__name__)
     #query_command = "{} | grep {} | awk '{{print $1}}'".format(Scheduler.status_command(scheduler), job_id)
     #query_command = "{} | grep {} ".format(Scheduler.status_command(scheduler), job_id)
     query_command = Scheduler.status_command(scheduler)
@@ -118,8 +127,9 @@ def monitor(job_id, scheduler):
             result = subprocess.check_output([query_command], shell=True)
             output.append(result)
     except Exception as e:
-        print("Job monitoring error:")
-        print(e)
+        # print("Job monitoring error:")
+        # print(e)
+        logger.error('Job monitoring error: {}'.format(e))
     finally:
         return '\n'.join(output)
     
@@ -138,7 +148,7 @@ def generate_script(task):
             param_list.append(param)
 
     params = " ".join(param_list)    
-    script_name = task.__id__ + '.sub'
+    script_name = task.name + '.sub'
     script = os.path.join(_script_dir, script_name)
     with open(script, 'w') as f:        
         f.write("#!/bin/bash\n")
@@ -164,16 +174,19 @@ Execute a workflow DAG: generate individual task scripts and then run
 - a task waits on the state to be changed
 """
 def dag_execution(dag):
+    # logger = logging.getLogger(__name__)
     global _script_dir
     _script_dir = os.path.join(outdir, _workflow_id)
     if not os.path.exists(_script_dir):
         os.makedirs(_script_dir)
 
-    print("[Workflow-{}] Getting tasks".format(_workflow_id))
+    # print("[Workflow-{}] Getting tasks".format(_workflow_id))
+    logger.debug('Getting workflow-{} tasks'.format(_workflow_id))
     execution_order = dagman.batch_execution_order(dag)
     taskq = queue.Queue()
 
-    print("[Workflow-{}] Executing tasks".format(_workflow_id))
+    # print("[Workflow-{}] Executing tasks".format(_workflow_id))
+    logger.debug('Executing workflow-{} tasks'.format(_workflow_id))
     for task in execution_order:
         taskq.put(task)
         taskmap[task.__id__] = len(task.predecessors)
@@ -186,10 +199,12 @@ def dag_execution(dag):
         thread.start()
 
     taskq.join()
-    print("[Workflow-{}] Finished execution".format(_workflow_id))
-    print("{}".format(result_list))
+    # print("[Workflow-{}] Finished execution".format(_workflow_id))
+    logger.debug('Completed workflow-{}'.format(_workflow_id))
+    # print("{}".format(result_list))
+    logger.info('Result: {}'.format(result_list))
     #shutil.rmtree(_script_dir)
-    shutil.rmtree(outdir)
+    #shutil.rmtree(outdir)
 
 """
 execute a single task of the workflow
@@ -199,9 +214,11 @@ def execute_task(task):
     '''
     submit the task
     '''
-    print("[Workflow-{}] Submitted task-{}".format(_workflow_id, task.__id__))
+    # print("Workflow-{}: Submitted task-{}".format(_workflow_id, task.__id__))
+    logger.debug("Workflow-{}: Submitted task-{}".format(_workflow_id, task.__id__))
     result = submit(job_script, task.scheduler)
-    print("[Workflow-{}] Finished task-{}".format(_workflow_id, task.__id__))
+    # print("Workflow-{}: Finished task-{}".format(_workflow_id, task.__id__))
+    logger.debug("Workflow-{}: Finished task-{}".format(_workflow_id, task.__id__))
             
     return result
 
@@ -215,7 +232,8 @@ def bin_execution(dag):
     if not os.path.exists(_script_dir):
         os.makedirs(_script_dir)
 
-    print("[Workflow-{}] Getting tasks".format(_workflow_id))
+    # print("Workflow-{} Getting tasks".format(_workflow_id))
+    logger.debug("Workflow-{}: Getting tasks".format(_workflow_id))
     task_bins = dagman.bin_execution_order(dag)
     idx = 0
     for bin in task_bins:
@@ -224,7 +242,8 @@ def bin_execution(dag):
         idx += 1
         
     result_list = []
-    print("[Workflow-{}] Executing tasks".format(_workflow_id))
+    # print("[Workflow-{}] Executing tasks".format(_workflow_id))
+    logger.debug("Workflow-{}: Executing tasks".format(_workflow_id))
     for tasks in task_bins:
         num_tasks = len(tasks)
         pool = multiprocessing.Pool(processes=num_tasks)
@@ -238,8 +257,10 @@ def bin_execution(dag):
         for result in results:
             result_list.append(result.get())
             
-    print("[Workflow-{}] Finished execution".format(_workflow_id))
-    print("{}".format(result_list))
+    # print("[Workflow-{}] Finished execution".format(_workflow_id))
+    logger.debug("Workflow-{}: Completed".format(_workflow_id))
+    # print("{}".format(result_list))
+    logger.info("Result: {}".format(result_list))
 
 
 """
@@ -269,5 +290,6 @@ def execute(dag, mode=ExecutionMode.DAG):
     elif mode == ExecutionMode.DEPENDENCY:
         dependency_execution(dag)
     else:
-        print("Workflow execution mode ({}) not implemented!".format(mode))
+        # print("Workflow execution mode ({}) not implemented!".format(mode))
+        logger.error("Workflow execution mode ({}) not implemented!".format(mode))
     

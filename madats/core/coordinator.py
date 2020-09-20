@@ -20,6 +20,10 @@ from madats.management import workflow_manager, execution_manager, data_manager
 import sys
 from collections import namedtuple
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 '''
 Coordinates the movement of data between multiple storage tiers through VDS (manages VDS and virtual data objects)
  - creates data tasks and a DAG -- manages `WHAT' data is moved
@@ -55,6 +59,7 @@ manage VDS by managing data as per the defined policy
 """
 def manage(vds, execute_mode=ExecutionMode.DAG):
     policy = vds.strategy
+    logger.info('Data management strategy is `{}`'.format(Policy.name(policy)))
     # identify the task dependencies before applying the data mangement strategy
     # the data movements will come into effect based on the the data-task dependencies
     dag = vds.get_task_dag()
@@ -62,13 +67,17 @@ def manage(vds, execute_mode=ExecutionMode.DAG):
         data_manager.dm_workflow_aware(vds)
     elif policy == Policy.STORAGE_AWARE:
         data_manager.dm_storage_aware(vds)
-        
+
+    # set meaningful task names to generate scripts based on those names
+    vds.set_task_names()
+       
     # get the extended workflow with data and compute tasks
     dag = vds.get_task_dag()
     # print("**************")
     # workflow_manager.display(dag)
     # print("**************")
 
+    logger.info('Execution mode is `{}`'.format(ExecutionMode.name(execute_mode)))
     execution_manager.execute(dag, execute_mode) 
 
 
@@ -105,7 +114,8 @@ query the VDS
 """
 def query(vds, metrics):
     if type(metrics) != list:
-        print("Metrics must be of type `list`")
+        # print("Metrics must be of type `list`")
+        logger.error("VDS query metrics must be of type `list`")
         sys.exit(1)
 
     metric_results = vds.__query_elements__

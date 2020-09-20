@@ -88,11 +88,11 @@ class Policy(object):
     WORKFLOW_AWARE = 1
     STORAGE_AWARE = 2
 
-    policy_name = {NONE: 'none', WORKFLOW_AWARE: 'wfa',
-                   STORAGE_AWARE: 'sta'}
+    policy_name = {NONE: 'none', WORKFLOW_AWARE: 'workflow-aware',
+                   STORAGE_AWARE: 'storage-aware'}
 
-    policy_type = {'none': NONE, 'wfa': WORKFLOW_AWARE,
-                   'sta': STORAGE_AWARE}
+    policy_type = {'none': NONE, 'workflow-aware': WORKFLOW_AWARE,
+                   'storage-aware': STORAGE_AWARE}
 
     @staticmethod
     def name(policy):
@@ -107,15 +107,15 @@ class Policy(object):
         return Policy.policy_name
 
 
-"""
-test main
-"""
-if __name__ == '__main__':
-    ptypes = Persistence.types()
-    for p in ptypes:
-        v = Persistence.lifetime_in_secs(p)
-        print('{}: {}'.format(p, v))
+# """
+# test main
+# """
+# if __name__ == '__main__':
+#     ptypes = Persistence.types()
+#     for p in ptypes:
+#         v = Persistence.lifetime_in_secs(p)
+#         print('{}: {}'.format(p, v))
 
-    print('SHORT_TERM: {}'.format(Persistence.lifetime_in_secs('SHORT_TERM')))
+#     print('SHORT_TERM: {}'.format(Persistence.lifetime_in_secs('SHORT_TERM')))
 
 
