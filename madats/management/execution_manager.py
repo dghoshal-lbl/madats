@@ -27,6 +27,7 @@ import uuid
 from madats.utils.constants import ExecutionMode, TaskType
 import shutil
 import logging
+from madats.utils.config import scripting_config
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,8 @@ taskmap = {}
 lock = threading.Lock()
 
 _workflow_id = str(uuid.uuid4())
-outdir = os.path.expandvars('$MADATS_HOME/outdir')
+# outdir = os.path.expandvars('$MADATS_HOME/outdir')
+outdir = scripting_config.directory
 
 """
 workers processing the workflow tasks/stages
@@ -72,10 +74,12 @@ def worker(taskq):
 
             params = " ".join(param_list)    
             #print("** Submitted: {} {}".format(task.command, params))
-            logger.info('Submitted {} {}'.format(task.command, params))
+            logger.info('Submitted task {}'.format(task.name))
+            logger.debug('Submitted {} {}'.format(task.command, params))
             result = submit(job_script, task.scheduler)
             #print("** Finished: {} {}".format(task.command, params))
-            logger.info('Completed {} {}'.format(task.command, params))
+            logger.info('Completed task {}'.format(task.name))
+            logger.debug('Completed {} {}'.format(task.command, params))
             #print("[Workflow-{}] Finished {} task-{}".format(_workflow_id, TaskType.name(task.type), task.__id__))
             
             '''
@@ -148,18 +152,19 @@ def generate_script(task):
             param_list.append(param)
 
     params = " ".join(param_list)    
-    script_name = task.name + '.sub'
+    script_name = task.name + '.' + scripting_config.extension
     script = os.path.join(_script_dir, script_name)
     with open(script, 'w') as f:        
-        f.write("#!/bin/bash\n")
+        # f.write("#!/bin/bash\n")
+        f.write(scripting_config.header + os.linesep)
         if task.scheduler != Scheduler.NONE:
             for opt in task.scheduler_opts:
                 directive = Scheduler.get_directive(task.scheduler, opt)
                 if directive != None:
                     value = str(task.scheduler_opts[opt])
-                    directive_stmt = directive + '=' + value + '\n'
+                    directive_stmt = directive + '=' + value + os.linesep
                     f.write(directive_stmt)
-        f.write(command + ' ' + params + '\n')
+        f.write(command + ' ' + params + os.linesep)
 
     os.chmod(script, 0o744)
     
@@ -177,6 +182,7 @@ def dag_execution(dag):
     # logger = logging.getLogger(__name__)
     global _script_dir
     _script_dir = os.path.join(outdir, _workflow_id)
+    logger.info('Script directory is {}'.format(_script_dir))
     if not os.path.exists(_script_dir):
         os.makedirs(_script_dir)
 
@@ -204,7 +210,9 @@ def dag_execution(dag):
     # print("{}".format(result_list))
     logger.info('Result: {}'.format(result_list))
     #shutil.rmtree(_script_dir)
-    #shutil.rmtree(outdir)
+    if not scripting_config.keep:
+        shutil.rmtree(_script_dir)
+        logger.info('Cleaning up script directory {}'.format(_script_dir))
 
 """
 execute a single task of the workflow

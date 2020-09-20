@@ -33,7 +33,6 @@ def _get_logging_info():
         },
         'handlers': {
             'console': {
-                'level': logging.INFO,
                 'class': 'logging.StreamHandler',
                 'formatter': 'simple',
                 'stream': 'ext://sys.stdout'
@@ -79,6 +78,12 @@ class Config():
         config = configparser.ConfigParser()
         config.read(self.__config_file__)
         value = str(config.get(section, key))
+        return value
+
+    def getbool(self, section, key):
+        config = configparser.ConfigParser()
+        config.read(self.__config_file__)
+        value = config.getboolean(section, key)
         return value
 
 
@@ -184,11 +189,45 @@ class SchedulerConfig():
     def emailopts(self):
         return self._emailopts
 
+
+class ScriptingConfig():
+    """
+    config for script generation
+    """
+
+    def __init__(self):
+        config_file = os.path.expandvars('$MADATS_HOME/config/config.cfg')
+        self.config = Config(config_file)
+        self._directory = os.path.expandvars(self.config.get('script_generation', 'directory'))
+        self._extension = self.config.get('script_generation', 'extension')
+        self._keep = self.config.getbool('script_generation', 'keep')
+        self._header = self.config.get('script_generation', 'header')
+
+    @property
+    def directory(self):
+        return self._directory
+
+    @property
+    def extension(self):
+        return self._extension
+
+    @property
+    def keep(self):
+        return self._keep
+
+    @property
+    def header(self):
+        return self._header
+
+
 # data property configuration object
 property_config = PropertyConfig()
 
 # scheduler configuration objects
 slurm_config = SchedulerConfig('slurm')
 pbs_config = SchedulerConfig('pbs')
+
+# script generator configuration object
+scripting_config = ScriptingConfig()
 
 _init_log()
